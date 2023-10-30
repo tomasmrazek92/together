@@ -307,6 +307,15 @@ const revealLetters = (elements, letterDelay) => {
   return codeTimeline;
 };
 
+export const copyToClipboard = (text) => {
+  const tempElem = document.createElement('textarea');
+  tempElem.value = text;
+  document.body.appendChild(tempElem);
+  tempElem.select();
+  document.execCommand('copy');
+  document.body.removeChild(tempElem);
+};
+
 // --- Text Animations Start ---
 // Letter Animation
 export const letterAnimation = (elements, letterType) => {

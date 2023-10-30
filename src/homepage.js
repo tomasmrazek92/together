@@ -28,6 +28,7 @@ $(document).ready(function () {
       let nextIndex = (currentIndex + 1) % tabItems.length;
 
       // Update the tab after the duration to create autoplay
+      clearTimeout(heroLoops);
       heroLoops = setTimeout(() => {
         // Update the tab
         updateHero(nextIndex);
@@ -36,6 +37,15 @@ $(document).ready(function () {
         switchHero(nextIndex);
       }, duration);
     }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        clearTimeout(heroLoops);
+      } else {
+        // Resume the loop
+        switchHero(1);
+      }
+    });
 
     // Tabs Updating
     function updateHero(index, event = null) {
@@ -92,7 +102,6 @@ $(document).ready(function () {
     function updateHeading(el) {
       let text = el.attr('title-text');
       let textEl = $('#title-text');
-
       gsap.to(textEl, { duration: 1, text: text, ease: 'none' });
     }
     function sliderProgress(index) {
@@ -156,15 +165,18 @@ $(document).ready(function () {
 
     // Hover Events
     let hoverTimer; // Declare this variable at the beginning of your script or function
+    const runTabs = (el) => {
+      let index = tabItems.index($(el)); // Get index of hovered item
+      updateHero(index, event);
+      switchHero(index); // Resume automatic tab switching
+    };
 
     tabItems.on('mouseenter', function (event) {
       if ($(window).width() >= 992) {
         clearTimeout(hoverTimer); // Clear any existing hover timer
         hoverTimer = setTimeout(() => {
           clearTimeout(heroLoops); // Clear the automatic tab switching timer
-          let index = tabItems.index($(this)); // Get index of hovered item
-          updateHero(index, event);
-          switchHero(index); // Resume automatic tab switching
+          runTabs($(this));
         }, 100);
       }
     });
@@ -172,6 +184,16 @@ $(document).ready(function () {
     // Mouseleave event to clear the timer if the user leaves before 200ms
     tabItems.on('mouseleave', function () {
       clearTimeout(hoverTimer);
+    });
+
+    // Tab unfocus fix
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        clearTimeout(heroLoops);
+      } else {
+        // Resume the loop
+        runTabs(tabItems.filter('.is-active'));
+      }
     });
 
     // Load

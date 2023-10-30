@@ -1,4 +1,5 @@
 import {
+  copyToClipboard,
   disableScroll,
   initSwipers,
   letterAnimation,
@@ -13,11 +14,45 @@ $(document).ready(function () {
   }
 
   // Make the external links open in new tab
-  jQuery(document.links)
+  $(document.links)
     .filter(function () {
-      return this.hostname != window.location.hostname;
+      return this.hostname !== window.location.hostname;
     })
     .attr('target', '_blank');
+
+  // Hide Scrollbar
+  function addNoScrollbarClass() {
+    const allElements = document.querySelectorAll('*');
+
+    for (const element of allElements) {
+      // Exclude body and html elements
+      if (element.tagName.toLowerCase() === 'body' || element.tagName.toLowerCase() === 'html') {
+        continue;
+      }
+
+      const style = window.getComputedStyle(element);
+      if (
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll' ||
+        style.overflowX === 'auto' ||
+        style.overflowX === 'scroll' ||
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll'
+      ) {
+        // Disable Scrollbar
+        element.classList.add('no-scrollbar');
+        // Fix for inner scroll inside swipers
+        element.classList.add('swiper-no-swiping');
+      }
+    }
+  }
+  addNoScrollbarClass();
+
+  // Copy code inside blog articles
+  $('.w-richtext .w-embed pre').on('click', function () {
+    let codeToCopy = $(this).find('code').text();
+    console.log(codeToCopy);
+  });
 
   // -------------- Menu
   $('.navbar_button').on('click', function () {
@@ -86,7 +121,7 @@ $(document).ready(function () {
       const content = $('.autotabs_content-item');
       const progressline = $('.progress-line');
       const activeClass = 'is-active';
-      const duration = 5000;
+      const duration = 8000;
 
       // Variables
       let tabLoops;
@@ -106,7 +141,6 @@ $(document).ready(function () {
               spaceBetween: 40,
               autoplay: {
                 delay: duration,
-                disableOnInteraction: false,
               },
               on: {
                 init: (swiper) => {
@@ -156,8 +190,29 @@ $(document).ready(function () {
         // -- Update part
         const tabToActivate = $(parent).find(tabItems).eq(index).find(tabLinks);
         const contentToActive = $(parent).find(content).eq(index);
+
+        // Add active class
         tabToActivate.addClass(activeClass);
+
+        // Play video is exists
+        if (contentToActive.find('video').length) {
+          let videoElem = contentToActive.find('video').get(0); // Get the native HTMLVideoElement
+          // Check for load state
+          if (videoElem.readyState >= 3) {
+            // Check if it's already loaded
+            videoElem.currentTime = 0; // Revert the time to 0
+            videoElem.play(); // Play the video
+          } else {
+            videoElem.addEventListener('loadeddata', function () {
+              videoElem.currentTime = 0; // Revert the time to 0
+              videoElem.play(); // Play the video
+            });
+          }
+        }
+        // Fade in the tab
         contentToActive.stop().fadeIn(function () {
+          contentToActive.css('opacity', '1');
+          // Animate Output
           if (contentToActive.find('.chat-conv_box').length) {
             animateOutput($(parent), index);
           } else if (contentToActive.find('.code-box').length) {
@@ -186,13 +241,20 @@ $(document).ready(function () {
       function triggerProgress(el) {
         el.find(progressline).animate({ width: '100%' }, duration);
       }
+
+      let outputInstance;
       function animateOutput(parent, index) {
+        if (outputInstance) {
+          outputInstance.kill(); // Kill previous GSAP animation
+        }
+
         let el = $(parent).find(content).eq(index);
         let inputText = el.find('[input-text]');
         let outputText = el.find('[output-text]');
+
         inputText.stop().animate({ opacity: 1 }, function () {
           setTimeout(() => {
-            letterAnimation(outputText);
+            outputInstance = letterAnimation(outputText, 2 / outputText.text().length);
           }, 250);
         });
       }
@@ -307,6 +369,19 @@ $(document).ready(function () {
 
   // Run the Autotabs
   initAutoplayTabs($('.autotabs_wrap'));
+
+  // Copy Tabs Content
+  $('.chat-conv_copy-icon').on('click', function () {
+    let tab = $(this).closest('.chat-conv').length
+      ? $(this).closest('.chat-conv')
+      : $(this).closest('.code-box');
+
+    let textToCopy =
+      tab.find('[input-text]').text() ||
+      tab.find('[output-text]').text() ||
+      tab.find('.code-box_code').text();
+    textToCopy && copyToClipboard(textToCopy);
+  });
 
   //  -------------- Pill Sections
   $('.pill-header,.callout').each(function () {
