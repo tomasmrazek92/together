@@ -38,7 +38,7 @@ $(document).ready(function () {
       .find('.navigation-box')
       .on('mouseenter', function () {
         let index = $(this).index();
-        swipers['blog-hero']['blog-hero_0'].swiperInstance.slideTo(index);
+        swipers['blog-hero']['blog-hero_0'].swiperInstance.slideToLoop(index);
       });
   }, 200);
 });

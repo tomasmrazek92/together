@@ -2,6 +2,7 @@ import { createResponsiveSwiper, initSwipers, progressLine } from './utils/globa
 
 $(document).ready(function () {
   const duration = 5000;
+
   $('.hp-hero_list').each(function () {
     // Elements
     const parent = $(this);
@@ -85,14 +86,14 @@ $(document).ready(function () {
     function playLottie(index) {
       if (!$('body').hasClass('overflow-hidden')) {
         // fix for closing the menu
-        lotties.eq(index).addClass('is-playing').trigger('click'); // play current
+        lotties.eq(index).addClass('is-playing');
       }
     }
     function updateHeading(el) {
       let text = el.attr('title-text');
       let textEl = $('#title-text');
 
-      gsap.to(textEl, { duration: 0.5, text: text, ease: 'none' });
+      gsap.to(textEl, { duration: 1, text: text, ease: 'none' });
     }
     function sliderProgress(index) {
       let bars = parent.find('.navigation').find('.progress-bar');

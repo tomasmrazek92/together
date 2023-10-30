@@ -1,18 +1,64 @@
-import { disableScroll, initSwipers, letterAnimation, wrapLetters } from './utils/globalFunctions';
+import {
+  disableScroll,
+  initSwipers,
+  letterAnimation,
+  progressLine,
+  wrapLetters,
+} from './utils/globalFunctions';
 
 $(document).ready(function () {
-  // -- Disable scroll menu
+  // -------------- Global Functions
+  function toggleTextContent(el, show = true) {
+    $(el).css('opacity', show ? '1' : '0');
+  }
+
+  // Make the external links open in new tab
+  jQuery(document.links)
+    .filter(function () {
+      return this.hostname != window.location.hostname;
+    })
+    .attr('target', '_blank');
+
+  // -------------- Menu
   $('.navbar_button').on('click', function () {
     disableScroll();
   });
 
-  // -- Wrap Each Output Characters
+  // Menu Color Change
+  updateNav();
+  $(window).on('scroll', updateNav);
+
+  function updateNav() {
+    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const offset = 10 * rootFontSize;
+    const windowTop = $(window).scrollTop();
+    const elems = $('.navbar_wrapper');
+    let shouldAddClass = false;
+
+    $('.background-color-charcoal').each(function () {
+      const elementTop = $(this).offset().top;
+      const elementHeight = $(this).height();
+
+      if (windowTop <= elementTop + elementHeight - offset && windowTop >= elementTop - offset) {
+        shouldAddClass = true;
+        return false; // break out of each loop
+      }
+    });
+
+    if (shouldAddClass && !elems.hasClass('background-color-charcoal')) {
+      elems.addClass('background-color-charcoal');
+    } else if (!shouldAddClass && elems.hasClass('background-color-charcoal')) {
+      elems.removeClass('background-color-charcoal');
+    }
+  }
+
+  // -------------- Wrap Output Text
   $('[output-text]').each(function () {
     wrapLetters($(this));
     toggleTextContent($(this));
   });
 
-  // -- Open just one FaQ
+  // -------------- FAQs
   let faqItem = $('[faq-item]');
 
   // Faq Items
@@ -29,7 +75,7 @@ $(document).ready(function () {
     }
   });
 
-  // --- Autoplay Tabs Function
+  // -------------- Autoplaying Tabs
   function initAutoplayTabs(items) {
     $(items).each(function () {
       const el = $(this);
@@ -112,7 +158,10 @@ $(document).ready(function () {
         const contentToActive = $(parent).find(content).eq(index);
         tabToActivate.addClass(activeClass);
         contentToActive.stop().fadeIn(function () {
-          animateOutput($(parent), index);
+          if (contentToActive.find('.chat-conv_box').length) {
+            animateOutput($(parent), index);
+          } else if (contentToActive.find('.code-box').length) {
+          }
         });
 
         if (!skipTriggerProgress) {
@@ -259,12 +308,7 @@ $(document).ready(function () {
   // Run the Autotabs
   initAutoplayTabs($('.autotabs_wrap'));
 
-  // Functions
-  function toggleTextContent(el, show = true) {
-    $(el).css('opacity', show ? '1' : '0');
-  }
-
-  // --- Pill Section
+  //  -------------- Pill Sections
   $('.pill-header,.callout').each(function () {
     let pills = $(this).find('.pill-a, .pill-b, .pill-circle, .callout_p');
 
@@ -298,4 +342,100 @@ $(document).ready(function () {
       main.add(tl, '-=0.2');
     });
   });
+
+  //  -------------- FIlters
+  $("input[type='radio'][name='filter']").change(function () {
+    const section = $(this).closest('section');
+
+    // Remove 'active' class from all labels in this section
+    section.find("[fs-cmsfilter-element='clear']").removeClass('fs-cmsfilter_active');
+
+    // Add 'active' class to the parent label of the checked radio button in this section
+    section
+      .find("input[type='radio'][name='filter']:checked")
+      .closest("[fs-cmsfilter-element='clear']")
+      .addClass('fs-cmsfilter_active');
+  });
+
+  function toggleDropdown(el) {
+    $(el).toggleClass('open');
+  }
+
+  // Open Click
+  $('.filters')
+    .find('.button')
+    .on('click', function () {
+      let filter = $(this).closest('.filters').find('.filters-block');
+      toggleDropdown(filter);
+    });
+
+  // Outside Click
+  $(document).on('click', function (e) {
+    if (
+      $(e.target).closest('.filters').length === 0 ||
+      $(e.target).closest('.filters-menu').length >= 1
+    ) {
+      toggleDropdown($('.filters-block.open'));
+    }
+  });
+
+  // Tab Click
+  $('.filters .tab').on('click', function () {
+    let text = $(this).text();
+    $(this).closest('.filters').find('.button').find('div').eq(0).text(text);
+  });
+
+  //  -------------- Case Study
+  // Swipers
+  const swiperInstances = [
+    [
+      '.section_case-quote',
+      '.case-quote_slider',
+      'case-study',
+      {
+        slidesPerView: 1,
+        spaceBetween: 40,
+        effect: 'creative',
+        creativeEffect: {
+          prev: {
+            translate: [0, 0, -400],
+          },
+          next: {
+            translate: ['100%', 0, 0],
+          },
+        },
+        loop: true,
+        autoplay: {
+          delay: 8000,
+          disableOnInteraction: false,
+        },
+        on: {
+          init: (swiper) => {
+            progressLine($('.section_case-quote'), swiper);
+          },
+          slideChange: (swiper) => {
+            let visuals = $('.case-quote_image');
+            progressLine($('.section_case-quote'), swiper);
+            visuals.hide();
+            visuals.stop().eq(swiper.realIndex).fadeIn();
+          },
+        },
+      },
+      'all',
+    ],
+  ];
+
+  // Load
+  initSwipers(swiperInstances);
+
+  setTimeout(() => {
+    initSwipers(swiperInstances);
+    $('.case-quote_content-box')
+      .find('.navigation-box')
+      .on('mouseenter', function () {
+        let index = $(this).index();
+        console.log(index);
+        swipers['case-study']['case-study_0'].swiperInstance.slideToLoop(index);
+      });
+  }, 200);
 });
