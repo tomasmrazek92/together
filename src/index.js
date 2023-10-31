@@ -1,4 +1,5 @@
 import {
+  codeAnimation,
   copyToClipboard,
   disableScroll,
   initSwipers,
@@ -51,7 +52,7 @@ $(document).ready(function () {
   // Copy code inside blog articles
   $('.w-richtext .w-embed pre').on('click', function () {
     let codeToCopy = $(this).find('code').text();
-    console.log(codeToCopy);
+    copyToClipboard(codeToCopy);
   });
 
   // -------------- Menu
@@ -87,6 +88,14 @@ $(document).ready(function () {
     }
   }
 
+  // -------------- Animate Hero Heading
+  $('[animated-hero]').each(function () {
+    let span = $(this).find('h1').find('span');
+    let tl = gsap.timeline();
+    tl.add(letterAnimation(span, 0.1));
+    tl.to($(this).find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
+    tl.to($(this).find('.button'), { opacity: 1, stagger: 0.2 }, '<0.2');
+  });
   // -------------- Wrap Output Text
   $('[output-text]').each(function () {
     wrapLetters($(this));
@@ -110,6 +119,9 @@ $(document).ready(function () {
     }
   });
 
+  // Show first open by default
+  faqItem.filter(':first-child').trigger('click');
+
   // -------------- Autoplaying Tabs
   function initAutoplayTabs(items) {
     $(items).each(function () {
@@ -121,7 +133,7 @@ $(document).ready(function () {
       const content = $('.autotabs_content-item');
       const progressline = $('.progress-line');
       const activeClass = 'is-active';
-      const duration = 8000;
+      const duration = 11000;
 
       // Variables
       let tabLoops;
@@ -210,14 +222,19 @@ $(document).ready(function () {
           }
         }
         // Fade in the tab
-        contentToActive.stop().fadeIn(function () {
-          contentToActive.css('opacity', '1');
-          // Animate Output
-          if (contentToActive.find('.chat-conv_box').length) {
-            animateOutput($(parent), index);
-          } else if (contentToActive.find('.code-box').length) {
-          }
-        });
+
+        contentToActive
+          .stop()
+          .css('display', 'flex')
+          .fadeIn(function () {
+            contentToActive.css('opacity', '1');
+            // Animate Output
+            if (contentToActive.find('.chat-conv_box').length) {
+              animateOutput($(parent), index);
+            } else if (contentToActive.find('.code-box').length) {
+              animateCode($(contentToActive));
+            }
+          });
 
         if (!skipTriggerProgress) {
           triggerProgress(tabToActivate);
@@ -242,6 +259,7 @@ $(document).ready(function () {
         el.find(progressline).animate({ width: '100%' }, duration);
       }
 
+      // Typing logic
       let outputInstance;
       function animateOutput(parent, index) {
         if (outputInstance) {
@@ -257,6 +275,15 @@ $(document).ready(function () {
             outputInstance = letterAnimation(outputText, 2 / outputText.text().length);
           }, 250);
         });
+      }
+
+      let codeInstance;
+      function animateCode(parent) {
+        let codeLength = $(parent).find('code').text().length;
+        if (codeInstance) {
+          codeInstance.kill(); // Kill previous GSAP animation
+        }
+        codeInstance = codeAnimation(parent, 2 / codeLength);
       }
 
       // Killing logic

@@ -326,13 +326,15 @@ export const letterAnimation = (elements, letterType) => {
 };
 
 // CodeAnimation
-export const codeAnimation = (className) => {
+export const codeAnimation = (className, duration) => {
   const codeBlock = $(className).find('code');
   const lineNumbers = codeBlock.find('.line-numbers-rows').eq(0).clone();
+  let letterDelay;
+  letterDelay = duration || 0.01;
   codeBlock.find('.line-numbers-rows').remove();
   wrapLetters(codeBlock);
   codeBlock.prepend(lineNumbers);
-  return revealLetters(codeBlock, 0.01);
+  return revealLetters(codeBlock, letterDelay);
 };
 
 // --- Text Aniomation Ends ---
