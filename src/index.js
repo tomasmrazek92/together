@@ -120,7 +120,12 @@ $(document).ready(function () {
   });
 
   // Show first open by default
-  faqItem.filter(':first-child').trigger('click');
+  faqItem.each(function () {
+    let status = $(this).attr('expand-default');
+    if (status === 'true') {
+      $(this).trigger('click');
+    }
+  });
 
   // -------------- Autoplaying Tabs
   function initAutoplayTabs(items) {
@@ -411,39 +416,48 @@ $(document).ready(function () {
   });
 
   //  -------------- Pill Sections
-  $('.pill-header,.callout').each(function () {
-    let pills = $(this).find('.pill-a, .pill-b, .pill-circle, .callout_p');
-
+  $('.pill-header').each(function () {
     let main = gsap.timeline({
+      paused: true,
       scrollTrigger: {
         trigger: $(this),
-        start: 'center bottom', // when the top of the trigger hits the top of the viewport
+        start: 'center bottom',
+      },
+    });
+    main.add(typeCallout($(this)));
+  });
+
+  function typeCallout(parent) {
+    let pills = $(parent).find('.pill-a, .pill-b, .pill-circle, .callout_p');
+    let tl = gsap.timeline({
+      defaults: {
+        ease: 'power3.out',
       },
     });
 
     pills.each(function () {
-      let tl = gsap.timeline();
-
       let element = $(this);
       let elClass = element.attr('class').split(' ')[0];
       let text = element.find('div[class*="text"]');
 
       if (elClass === 'pill-a' || elClass === 'pill-b') {
-        tl.fromTo(element.find('[mask]'), { xPercent: -100 }, { xPercent: 0, duration: 0.5 });
+        tl.fromTo(element.find('[mask]'), { xPercent: -100 }, { xPercent: 0, duration: 0.3 });
         if (element.attr('direction') === 'vertical') {
           tl.fromTo(text, { yPercent: 150 }, { yPercent: 0, duration: 0.5 });
         } else {
           tl.fromTo(text, { xPercent: -110 }, { xPercent: 0, duration: 0.5 }, '<0.2');
         }
       } else if (elClass === 'callout_p') {
-        tl.add(letterAnimation(element, 0.03));
+        tl.add(letterAnimation(element, 0.02));
       } else if (elClass === 'pill-circle') {
         tl.fromTo(element, { scale: 0 }, { scale: 1 });
       }
 
-      main.add(tl, '-=0.2');
+      tl.add(tl, '-=0.2');
     });
-  });
+
+    return tl;
+  }
 
   //  -------------- FIlters
   $("input[type='radio'][name='filter']").change(function () {
@@ -487,9 +501,9 @@ $(document).ready(function () {
     $(this).closest('.filters').find('.button').find('div').eq(0).text(text);
   });
 
-  //  -------------- Case Study
-  // Swipers
+  // --- Swipers
   const swiperInstances = [
+    // Case Study
     [
       '.section_case-quote',
       '.case-quote_slider',
@@ -525,6 +539,46 @@ $(document).ready(function () {
       },
       'all',
     ],
+    // Callouts
+    [
+      '.section_callout',
+      '.callout_box',
+      'callout',
+      {
+        slidesPerView: 1,
+        spaceBetween: 40,
+        loop: true,
+        autoplay: {
+          delay: 8000,
+        },
+        on: {
+          init: function (swiper) {
+            // Define all
+            $(this.slides).each((index, slide) => {
+              slide.gsapTimeline = gsap.timeline({ paused: true });
+              slide.gsapTimeline.add(typeCallout($(slide)));
+            });
+            // Play first
+            let slide = $(this.slides).eq(this.activeIndex);
+            slide[0].gsapTimeline.play();
+          },
+          slideChange: function () {
+            // Pause All
+            $(this.slides).each((index, slide) => {
+              if (slide.gsapTimeline) {
+                slide.gsapTimeline.progress(0).pause();
+                slide.gsapTimeline.kill();
+              }
+            });
+            // Play current
+            let slide = $(this.slides).eq(this.activeIndex);
+            slide[0].gsapTimeline.play();
+            progressLine($('.callout_wrap'), this);
+          },
+        },
+      },
+      'all',
+    ],
   ];
 
   // Load
@@ -532,12 +586,21 @@ $(document).ready(function () {
 
   setTimeout(() => {
     initSwipers(swiperInstances);
+
+    // Hover Case Study
     $('.case-quote_content-box')
       .find('.navigation-box')
       .on('mouseenter', function () {
         let index = $(this).index();
-        console.log(index);
         swipers['case-study']['case-study_0'].swiperInstance.slideToLoop(index);
+      });
+
+    // Hover Callout
+    $('.callout_wrap')
+      .find('.navigation-box')
+      .on('mouseenter', function () {
+        let index = $(this).index();
+        swipers['callout']['callout_0'].swiperInstance.slideToLoop(index);
       });
   }, 200);
 });
