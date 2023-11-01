@@ -254,4 +254,18 @@ $(document).ready(function () {
     // Load
     initSwipers(swiperInstances);
   });
+
+  // Prevent unwanted scroll inside model list
+  let hoverTimeOut;
+  let modelBox = $('.platform-box_inner');
+  modelBox.on('mouseenter', function () {
+    hoverTimeOut = setTimeout(() => {
+      modelBox.css('overflow', 'auto');
+    }, 300);
+  });
+
+  modelBox.on('mouseleave', function () {
+    clearTimeout(hoverTimeOut);
+    modelBox.css('overflow', 'hidden');
+  });
 });

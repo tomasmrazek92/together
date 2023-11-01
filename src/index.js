@@ -156,9 +156,6 @@ $(document).ready(function () {
             {
               slidesPerView: 'auto',
               spaceBetween: 40,
-              autoplay: {
-                delay: duration,
-              },
               on: {
                 init: (swiper) => {
                   updateTab($(swiper.el).closest('.autotabs_wrap'), swiper.realIndex);
@@ -550,6 +547,7 @@ $(document).ready(function () {
         loop: true,
         autoplay: {
           delay: 8000,
+          disableOnInteraction: false,
         },
         on: {
           init: function (swiper) {
@@ -560,6 +558,7 @@ $(document).ready(function () {
             });
             // Play first
             let slide = $(this.slides).eq(this.activeIndex);
+            progressLine($('.callout_wrap'), this);
             slide[0].gsapTimeline.play();
           },
           slideChange: function () {
