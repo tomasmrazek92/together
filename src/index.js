@@ -21,6 +21,18 @@ $(document).ready(function () {
     })
     .attr('target', '_blank');
 
+  // Scroll to the note
+  $('sup').on('click', function () {
+    let indexText = $(this).text();
+    console.log('click');
+
+    let targetElement = $('#footer-notes').find(`li`).eq(indexText);
+
+    if (targetElement.length > 0) {
+      let topOffset = targetElement.offset().top - $(window).height() / 2;
+      $('html, body').animate({ scrollTop: topOffset }, 500);
+    }
+  });
   // Hide Scrollbar
   function addNoScrollbarClass() {
     const allElements = document.querySelectorAll('*');
@@ -93,7 +105,7 @@ $(document).ready(function () {
     let span = $(this).find('h1').find('span');
     let tl = gsap.timeline();
     tl.add(letterAnimation(span, 0.1));
-    tl.to($(this).find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
+    tl.to($(this).find('.hp-hero_par').find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
     tl.to($(this).find('.button'), { opacity: 1, stagger: 0.2 }, '<0.2');
   });
   // -------------- Wrap Output Text
@@ -519,18 +531,27 @@ $(document).ready(function () {
         },
         loop: true,
         autoplay: {
-          delay: 8000,
+          delay: 11000,
           disableOnInteraction: false,
         },
         on: {
           init: (swiper) => {
+            let visuals = $('.case-quote_image');
+            let activeVisual = visuals.eq(swiper.realIndex);
+            if (activeVisual.find('video').length) {
+              playCSVideo(activeVisual);
+            }
             progressLine($('.section_case-quote'), swiper);
           },
           slideChange: (swiper) => {
             let visuals = $('.case-quote_image');
-            progressLine($('.section_case-quote'), swiper);
+            let activeVisual = visuals.eq(swiper.realIndex);
             visuals.hide();
-            visuals.stop().eq(swiper.realIndex).fadeIn();
+            visuals.stop().filter(activeVisual).fadeIn();
+            if (activeVisual.find('video').length) {
+              playCSVideo(activeVisual);
+            }
+            progressLine($('.section_case-quote'), swiper);
           },
         },
       },
@@ -553,9 +574,12 @@ $(document).ready(function () {
           init: function (swiper) {
             // Define all
             $(this.slides).each((index, slide) => {
+              console.log(slide);
               slide.gsapTimeline = gsap.timeline({ paused: true });
               slide.gsapTimeline.add(typeCallout($(slide)));
             });
+            $(this.slidesEl).css('opacity', '1');
+
             // Play first
             let slide = $(this.slides).eq(this.activeIndex);
             progressLine($('.callout_wrap'), this);
@@ -580,8 +604,25 @@ $(document).ready(function () {
     ],
   ];
 
+  function playCSVideo(parent) {
+    let videoElem = parent.find('video').get(0); // Get the native HTMLVideoElement
+    // Check for load state
+    if (videoElem.readyState >= 3) {
+      // Check if it's already loaded
+      videoElem.currentTime = 0; // Revert the time to 0
+      videoElem.play(); // Play the video
+    } else {
+      videoElem.addEventListener('loadeddata', function () {
+        videoElem.currentTime = 0; // Revert the time to 0
+        videoElem.play(); // Play the video
+      });
+    }
+  }
+
   // Load
   initSwipers(swiperInstances);
+
+  let calloutTimeout;
 
   setTimeout(() => {
     initSwipers(swiperInstances);
@@ -598,8 +639,15 @@ $(document).ready(function () {
     $('.callout_wrap')
       .find('.navigation-box')
       .on('mouseenter', function () {
-        let index = $(this).index();
-        swipers['callout']['callout_0'].swiperInstance.slideToLoop(index);
+        calloutTimeout = setTimeout(() => {
+          let index = $(this).index();
+          swipers['callout']['callout_0'].swiperInstance.slideToLoop(index);
+        }, 500);
+      });
+    $('.callout_wrap')
+      .find('.navigation-box')
+      .on('mouseleave', function () {
+        clearTimeout(calloutTimeout);
       });
   }, 200);
 });

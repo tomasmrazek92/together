@@ -255,6 +255,13 @@ $(document).ready(function () {
     initSwipers(swiperInstances);
   });
 
+  // Load Anim
+  $('.hp-hero').each(function () {
+    let tl = gsap.timeline();
+    tl.to($(this).find('.hp-hero_par').find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
+    tl.to($(this).find('.button'), { opacity: 1, stagger: 0.2 }, '<0.2');
+  });
+
   // Prevent unwanted scroll inside model list
   let hoverTimeOut;
   let modelBox = $('.platform-box_inner');
