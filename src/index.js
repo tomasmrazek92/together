@@ -9,19 +9,19 @@ import {
 } from './utils/globalFunctions';
 
 $(document).ready(function () {
-  // -------------- Global Functions
+  // #region -------------- Global Functions
   function toggleTextContent(el, show = true) {
     $(el).css('opacity', show ? '1' : '0');
   }
 
-  // Make the external links open in new tab
+  // --- Make the external links open in new tab
   $(document.links)
     .filter(function () {
       return this.hostname !== window.location.hostname;
     })
     .attr('target', '_blank');
 
-  // Scroll to the note
+  // --- Scroll to the note
   $('sup').on('click', function () {
     let indexText = $(this).text();
     console.log('click');
@@ -33,7 +33,8 @@ $(document).ready(function () {
       $('html, body').animate({ scrollTop: topOffset }, 500);
     }
   });
-  // Hide Scrollbar
+
+  // --- Hide Scrollbar
   function addNoScrollbarClass() {
     const allElements = document.querySelectorAll('*');
 
@@ -61,18 +62,62 @@ $(document).ready(function () {
   }
   addNoScrollbarClass();
 
-  // Copy code inside blog articles
+  // --- Copy code inside blog articles
   $('.w-richtext .w-embed pre').on('click', function () {
     let codeToCopy = $(this).find('code').text();
     copyToClipboard(codeToCopy);
   });
 
-  // -------------- Menu
+  // --- Open Modal
+  let modal = $('.video_modal');
+  let video = modal.find('video');
+  $('[open-modal="true"]').on('click', function () {
+    modal.fadeIn();
+    playModalVideo(video);
+  });
+  $('.video_modal-trigger, .video_close-modal').on('click', () => {
+    modal.fadeOut();
+    playModalVideo(video);
+  });
+
+  function playModalVideo(video) {
+    if (video.length) {
+      // Check if the video is already playing
+      if (!video.get(0).paused) {
+        video.get(0).pause();
+        video.get(0).currentTime = 0;
+      } else {
+        video.get(0).play();
+      }
+    }
+  }
+
+  // --- Anchor scroll on reload
+  if (!sessionStorage.getItem('isReloaded')) {
+    window.scrollTo(0, 0);
+  }
+  if (sessionStorage.getItem('isReloaded')) {
+    var { hash } = window.location;
+    if (hash) {
+      $('html, body').animate(
+        {
+          scrollTop: $(hash).offset().top,
+        },
+        0
+      );
+    }
+  }
+  $(window).on('beforeunload', function () {
+    sessionStorage.setItem('isReloaded', 'true');
+  });
+  // #endregion
+
+  // #region -------------- Menu
   $('.navbar_button').on('click', function () {
     disableScroll();
   });
 
-  // Menu Color Change
+  // --- Menu Color Change
   updateNav();
   $(window).on('scroll', updateNav);
 
@@ -100,7 +145,27 @@ $(document).ready(function () {
     }
   }
 
-  // -------------- Animate Hero Heading
+  // --- Add Border to Navbar
+  $(window).on('scroll load', function () {
+    var scroll = $(window).scrollTop();
+    var element = $('.navbar');
+    var classAdd = 'sticky';
+    //console.log(scroll);
+    if (scroll >= 200) {
+      if (!element.hasClass(classAdd)) {
+        //console.log('a');
+        element.addClass(classAdd);
+      }
+    } else {
+      //console.log('a');
+      element.removeClass(classAdd);
+    }
+  });
+
+  // --- Initialize Modal instances for each .modal element
+  // #endregion
+
+  // #region -------------- Animate Hero Heading
   $('[animated-hero]').each(function () {
     let span = $(this).find('h1').find('span');
     let tl = gsap.timeline();
@@ -108,16 +173,18 @@ $(document).ready(function () {
     tl.to($(this).find('.hp-hero_par').find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
     tl.to($(this).find('.button'), { opacity: 1, stagger: 0.2 }, '<0.2');
   });
-  // -------------- Wrap Output Text
+  // #endregion
+
+  // #region -------------- Wrap Output Text
   $('[output-text]').each(function () {
     wrapLetters($(this));
     toggleTextContent($(this));
   });
+  // #endregion
 
-  // -------------- FAQs
+  // #region -------------- FAQs
   let faqItem = $('[faq-item]');
-
-  // Faq Items
+  // --- Faq Items
   faqItem.click(function () {
     const $this = $(this);
     const isOpen = $this.hasClass('open');
@@ -131,15 +198,16 @@ $(document).ready(function () {
     }
   });
 
-  // Show first open by default
+  // --- Show first open by default
   faqItem.each(function () {
     let status = $(this).attr('expand-default');
     if (status === 'true') {
       $(this).trigger('click');
     }
   });
+  // #endregion
 
-  // -------------- Autoplaying Tabs
+  // #region -------------- Autoplaying Tabs
   function initAutoplayTabs(items) {
     $(items).each(function () {
       const el = $(this);
@@ -408,10 +476,10 @@ $(document).ready(function () {
     });
   }
 
-  // Run the Autotabs
+  // --- Run the Autotabs
   initAutoplayTabs($('.autotabs_wrap'));
 
-  // Copy Tabs Content
+  // --- Copy Tabs Content
   $('.chat-conv_copy-icon').on('click', function () {
     let tab = $(this).closest('.chat-conv').length
       ? $(this).closest('.chat-conv')
@@ -423,10 +491,14 @@ $(document).ready(function () {
       tab.find('.code-box_code').text();
     textToCopy && copyToClipboard(textToCopy);
   });
+  // #endregion
 
-  //  -------------- Pill Sections
+  // #region -------------- Pill Sections
   $('.pill-header').each(function () {
     let main = gsap.timeline({
+      defaults: {
+        ease: 'power4.out',
+      },
       paused: true,
       scrollTrigger: {
         trigger: $(this),
@@ -440,7 +512,8 @@ $(document).ready(function () {
     let pills = $(parent).find('.pill-a, .pill-b, .pill-circle, .callout_p');
     let tl = gsap.timeline({
       defaults: {
-        ease: 'power3.out',
+        ease: 'power4.out',
+        duration: 0.4,
       },
     });
 
@@ -450,16 +523,16 @@ $(document).ready(function () {
       let text = element.find('div[class*="text"]');
 
       if (elClass === 'pill-a' || elClass === 'pill-b') {
-        tl.fromTo(element.find('[mask]'), { xPercent: -100 }, { xPercent: 0, duration: 0.3 });
+        tl.fromTo(element.find('[mask]'), { xPercent: -100 }, { xPercent: 0 }, '>-0.2');
         if (element.attr('direction') === 'vertical') {
-          tl.fromTo(text, { yPercent: 150 }, { yPercent: 0, duration: 0.5 });
+          tl.fromTo(text, { yPercent: 150 }, { yPercent: 0 }, '>-0.2');
         } else {
-          tl.fromTo(text, { xPercent: -110 }, { xPercent: 0, duration: 0.5 }, '<0.2');
+          tl.fromTo(text, { xPercent: -110 }, { xPercent: 0 }, '>-0.2');
         }
       } else if (elClass === 'callout_p') {
-        tl.add(letterAnimation(element, 0.02));
+        tl.add(letterAnimation(element, 0.02), '>-0.2');
       } else if (elClass === 'pill-circle') {
-        tl.fromTo(element, { scale: 0 }, { scale: 1 });
+        tl.fromTo(element, { scale: 0 }, { scale: 1, duration: 0.5 }, '>-0.3');
       }
 
       tl.add(tl, '-=0.2');
@@ -467,8 +540,9 @@ $(document).ready(function () {
 
     return tl;
   }
+  // #endregion
 
-  //  -------------- FIlters
+  // #region -------------- FIlters
   $("input[type='radio'][name='filter']").change(function () {
     const section = $(this).closest('section');
 
@@ -486,7 +560,7 @@ $(document).ready(function () {
     $(el).toggleClass('open');
   }
 
-  // Open Click
+  // --- Open Click
   $('.filters')
     .find('.button')
     .on('click', function () {
@@ -494,7 +568,7 @@ $(document).ready(function () {
       toggleDropdown(filter);
     });
 
-  // Outside Click
+  // --- Outside Click
   $(document).on('click', function (e) {
     if (
       $(e.target).closest('.filters').length === 0 ||
@@ -504,13 +578,14 @@ $(document).ready(function () {
     }
   });
 
-  // Tab Click
+  // --- Tab Click
   $('.filters .tab').on('click', function () {
     let text = $(this).text();
     $(this).closest('.filters').find('.button').find('div').eq(0).text(text);
   });
+  // #endregion
 
-  // --- Swipers
+  // #region -------------- Swipers
   const swiperInstances = [
     // Case Study
     [
@@ -567,7 +642,7 @@ $(document).ready(function () {
         spaceBetween: 40,
         loop: true,
         autoplay: {
-          delay: 8000,
+          delay: 11000,
           disableOnInteraction: false,
         },
         on: {
@@ -650,4 +725,5 @@ $(document).ready(function () {
         clearTimeout(calloutTimeout);
       });
   }, 200);
+  // #endregion
 });
