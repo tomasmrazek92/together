@@ -99,11 +99,51 @@ $(document).ready(function () {
         lotties.eq(index).addClass('is-playing');
       }
     }
+    // Define a flag to check if it's the first call
+    let isFirstCall = true;
+
     function updateHeading(el) {
-      let text = el.attr('title-text');
+      let newText = el.attr('title-text');
       let textEl = $('#title-text');
-      gsap.to(textEl, { duration: 1, text: text, ease: 'none' });
+      let currentText = textEl.text();
+      let maintainText = '.we'; // The part of the text to maintain during backspace
+      let removablePartIndex = currentText.indexOf(maintainText) + maintainText.length;
+      let removablePart = currentText.slice(removablePartIndex); // The part of the text to animate the removal
+      let typingSpeed = 0.1; // Duration for typing each character
+      let backspaceSpeed = 0.07; // Duration for backspacing each character
+
+      if (isFirstCall) {
+        // Instantly set the text and update the flag
+        gsap.to(textEl, {
+          duration: (newText.length - maintainText.length) * typingSpeed,
+          text: newText,
+          ease: 'none',
+        });
+        isFirstCall = false;
+      } else if (newText !== currentText) {
+        let backspaceAnimation = gsap.timeline();
+
+        // Backspace effect, excluding the maintainText
+        backspaceAnimation
+          .to(textEl, {
+            duration: removablePart.length * backspaceSpeed,
+            text: maintainText,
+            ease: 'none',
+            onUpdate: function () {
+              // Calculate the number of characters to show based on the animation's progress
+              let charToShow =
+                maintainText.length + Math.ceil(removablePart.length * (1 - this.progress()));
+              textEl.text(currentText.substr(0, charToShow));
+            },
+          })
+          .to(textEl, {
+            duration: (newText.length - maintainText.length) * typingSpeed,
+            text: newText,
+            ease: 'none',
+          });
+      }
     }
+
     function sliderProgress(index) {
       let bars = parent.find('.navigation').find('.progress-bar');
       bars.find(progressline).stop().css('width', '0%');

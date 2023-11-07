@@ -162,7 +162,51 @@ $(document).ready(function () {
     }
   });
 
-  // --- Initialize Modal instances for each .modal element
+  // -- Sub Nav Scroll
+  function scrollToCurrent() {
+    var container = $('.sub-navbar_pill');
+    var currentElement = $('.navbar_link.w--current');
+
+    if (currentElement.length) {
+      var containerOffset = container.offset().left;
+      var currentElementOffset = currentElement.offset().left;
+      var scrollLeftPos = container.scrollLeft() + (currentElementOffset - containerOffset);
+
+      // Animate the scroll position of the container
+      container.animate(
+        {
+          scrollLeft: scrollLeftPos,
+        },
+        500
+      );
+    }
+  }
+
+  // Setup a mutation observer to watch for changes in the active class
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+      if (mutation.attributeName === 'class') {
+        var target = $(mutation.target);
+        if (target.hasClass('w--current')) {
+          scrollToCurrent();
+        }
+      }
+    });
+  });
+
+  // Options for the observer (which mutations to observe)
+  var config = { attributes: true, childList: false, subtree: false };
+
+  // Select the target nodes to observe
+  $('.navbar_link').each(function () {
+    observer.observe(this, config);
+  });
+
+  // Call initially to ensure the current element is in view on load
+  setTimeout(() => {
+    scrollToCurrent();
+  }, 300);
+
   // #endregion
 
   // #region -------------- Animate Hero Heading
@@ -605,10 +649,6 @@ $(document).ready(function () {
           },
         },
         loop: true,
-        autoplay: {
-          delay: 11000,
-          disableOnInteraction: false,
-        },
         on: {
           init: (swiper) => {
             let visuals = $('.case-quote_image');
@@ -679,6 +719,7 @@ $(document).ready(function () {
     ],
   ];
 
+  // --- Case Studies
   function playCSVideo(parent) {
     let videoElem = parent.find('video').get(0); // Get the native HTMLVideoElement
     // Check for load state
@@ -693,6 +734,10 @@ $(document).ready(function () {
       });
     }
   }
+  $('.case-quote_image').on('click mouseenter', function () {
+    let video = $(this).find('video');
+    video.attr('controls', true);
+  });
 
   // Load
   initSwipers(swiperInstances);
