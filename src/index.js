@@ -22,15 +22,27 @@ $(document).ready(function () {
     .attr('target', '_blank');
 
   // --- Scroll to the note
+  let colorTimeout;
   $('sup').on('click', function () {
     let indexText = $(this).text();
-    console.log('click');
 
-    let targetElement = $('#footer-notes').find(`li`).eq(indexText);
+    let targetElement = $('#footer-notes')
+      .find(`li`)
+      .eq(indexText - 1);
 
     if (targetElement.length > 0) {
+      // scroll
       let topOffset = targetElement.offset().top - $(window).height() / 2;
       $('html, body').animate({ scrollTop: topOffset }, 500);
+
+      // highlight
+      targetElement.css('color', 'var(--charcoal)');
+
+      // remove highlight
+      clearTimeout(colorTimeout);
+      colorTimeout = setTimeout(() => {
+        targetElement.removeAttr('style');
+      }, 5000);
     }
   });
 
