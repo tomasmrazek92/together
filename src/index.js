@@ -129,6 +129,11 @@ $(document).ready(function () {
     disableScroll();
   });
 
+  // --- Dropdown Click
+  $('.navbar .tab').on('click', function () {
+    $('.navbar_button').trigger('tap');
+  });
+
   // --- Menu Color Change
   updateNav();
   $(window).on('scroll', updateNav);

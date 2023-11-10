@@ -212,7 +212,7 @@ $(document).ready(function () {
     };
 
     tabItems.on('mouseenter', function (event) {
-      if ($(window).width() >= 992) {
+      if ($(window).width() >= 992 && !$(this).find(tabLinks).hasClass('is-active')) {
         clearTimeout(hoverTimer); // Clear any existing hover timer
         hoverTimer = setTimeout(() => {
           clearTimeout(heroLoops); // Clear the automatic tab switching timer
