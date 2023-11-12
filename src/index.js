@@ -131,7 +131,9 @@ $(document).ready(function () {
 
   // --- Dropdown Click
   $('.navbar .tab').on('click', function () {
-    $('.navbar_button').trigger('tap');
+    if (window.innerWidth <= 991) {
+      $('.navbar_button').trigger('tap');
+    }
   });
 
   // --- Menu Color Change
