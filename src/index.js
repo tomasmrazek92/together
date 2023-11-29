@@ -104,24 +104,6 @@ $(document).ready(function () {
     }
   }
 
-  // --- Anchor scroll on reload
-  if (!sessionStorage.getItem('isReloaded')) {
-    window.scrollTo(0, 0);
-  }
-  if (sessionStorage.getItem('isReloaded')) {
-    var { hash } = window.location;
-    if (hash) {
-      $('html, body').animate(
-        {
-          scrollTop: $(hash).offset().top,
-        },
-        0
-      );
-    }
-  }
-  $(window).on('beforeunload', function () {
-    sessionStorage.setItem('isReloaded', 'true');
-  });
   // #endregion
 
   // #region -------------- Menu
@@ -790,4 +772,114 @@ $(document).ready(function () {
       });
   }, 200);
   // #endregion
+});
+
+$(document).ready(function () {
+  $('.list-b_link').each(function () {
+    var $listBLink = $(this);
+    var listIndex = $listBLink.closest('.w-dyn-item').index();
+    var $svg = $listBLink.find('svg');
+    var svgWidth = $svg.width();
+    var svgHeight = $svg.height() / 2; // Divide by 2 for the adjusted SVG size
+    var $topPath = $svg.find('.top-path');
+    var $bottomPath = $listBLink
+      .closest('.w-dyn-items')
+      .find('.w-dyn-item')
+      .eq(listIndex + 1)
+      .find('.top-path');
+
+    var animateTop = true;
+    var animateBottom = true;
+    var animationTopFinished = false;
+    var animationBottomFinished = false;
+
+    function updateTopPath(relY) {
+      // Coordination Logics
+      var bendDistance = (((svgHeight / 2 - relY) / (svgHeight / 2)) * (svgHeight / 2)).toFixed(2);
+      bendDistance = Math.max(Math.min(bendDistance, svgHeight / 4), -svgHeight / 4);
+      var middleY = svgHeight / 2 - bendDistance;
+      middleY = Math.max(Math.min(middleY, svgHeight), 0);
+
+      // Animation Logic
+      if (animateTop) {
+        console.log('Top');
+        console.log(middleY);
+        gsap.killTweensOf($topPath);
+        gsap.to($topPath, {
+          duration: 1,
+          ease: 'power1.out',
+          attr: {
+            d: `M 0,${svgHeight / 2} Q ${svgWidth / 2},${middleY} ${svgWidth},${svgHeight / 2}`,
+          },
+          onComplete: () => {
+            console.log('Done');
+          },
+        });
+        animateTop = false;
+        animateBottom = true;
+      } else {
+        $topPath.attr(
+          'd',
+          `M 0,${svgHeight / 2} Q ${svgWidth / 2},${middleY} ${svgWidth},${svgHeight / 2}`
+        );
+        $bottomPath.attr('d', `M 0,${svgHeight * 0.5} L ${svgWidth},${svgHeight * 0.5}`);
+      }
+    }
+
+    function updateBottomPath(relY) {
+      // Coordination Logics
+      var bendDistance = (((relY - svgHeight / 2) / (svgHeight / 2)) * (svgHeight / 2)).toFixed(2);
+      bendDistance = Math.max(Math.min(bendDistance, svgHeight / 4), 0);
+      var middleY = svgHeight / 2 + bendDistance;
+      middleY = Math.max(Math.min(middleY, svgHeight), 0);
+
+      // Animation Logic
+      if (animateBottom) {
+        console.log('Bottom');
+        console.log(middleY);
+        console.log($bottomPath);
+        gsap.killTweensOf($bottomPath);
+        gsap.to($bottomPath, {
+          duration: 1,
+          ease: 'power1.out',
+          attr: {
+            d: `M 0,${svgHeight * 0.5} Q ${svgWidth / 2},${middleY} ${svgWidth},${svgHeight * 0.5}`,
+          },
+          onComplete: () => {
+            console.log('Done');
+          },
+        });
+        animateTop = true;
+        animateBottom = false;
+      } else {
+        /*
+        $topPath.attr('d', `M 0,${svgHeight / 2} L ${svgWidth},${svgHeight / 2}`);
+        $bottomPath.attr(
+          'd',
+          `M 0,${svgHeight * 0.5} Q ${svgWidth / 2},${middleY} ${svgWidth},${svgHeight * 0.5}`
+        );
+        */
+      }
+    }
+
+    function initializePaths() {
+      var listHeight = $listBLink.outerHeight();
+      updateTopPath(listHeight / 2);
+      updateBottomPath(listHeight / 2);
+    }
+
+    initializePaths();
+
+    $listBLink.mousemove(function (e) {
+      var parentOffset = $listBLink.offset();
+      var relY = e.pageY - parentOffset.top;
+      var listHeight = $listBLink.outerHeight();
+
+      if (relY < listHeight / 2) {
+        updateTopPath(relY);
+      } else {
+        updateBottomPath(relY);
+      }
+    });
+  });
 });
