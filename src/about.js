@@ -32,6 +32,9 @@ window.fsAttributes.push([
 
     // Sync the CMSFilters instance with the newly created filters
     filtersInstance.storeFiltersData();
+
+    // Show the list
+    document.querySelector('[job-list]').style.opacity = '1';
   },
 ]);
 
@@ -60,7 +63,6 @@ const fetchProducts = async () => {
  * @returns A new Collection Item element.
  */
 const createItem = (product, templateElement) => {
-  console.log(product);
   // Clone the template element
   const newItem = templateElement.cloneNode(true);
 
