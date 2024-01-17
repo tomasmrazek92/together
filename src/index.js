@@ -103,7 +103,6 @@ $(document).ready(function () {
       }
     }
   }
-
   // #endregion
 
   // #region -------------- Menu
@@ -348,8 +347,8 @@ $(document).ready(function () {
             });
           }
         }
-        // Fade in the tab
 
+        // Fade in the tab
         contentToActive
           .stop()
           .css('display', 'flex')
