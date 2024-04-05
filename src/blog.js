@@ -5,7 +5,7 @@ import {
   progressLine,
 } from './utils/globalFunctions';
 $(document).ready(function () {
-  // Swipers
+  // --- Swipers
   let blogHero = '.blog-hero_slider';
   const swiperInstances = [
     [
