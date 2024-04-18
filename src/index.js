@@ -85,20 +85,20 @@ $(document).ready(function () {
   let video = modal.find('video');
   $('[open-modal="true"]').on('click', function () {
     modal.fadeIn();
-    playModalVideo(video);
+    playModalVideo(video, true);
   });
   $('.video_modal-trigger, .video_close-modal').on('click', () => {
     modal.fadeOut();
-    playModalVideo(video);
+    playModalVideo(video, false);
   });
 
-  function playModalVideo(video) {
+  function playModalVideo(video, state) {
     if (video.length) {
       // Check if the video is already playing
       if (!video.get(0).paused) {
         video.get(0).pause();
         video.get(0).currentTime = 0;
-      } else {
+      } else if (state) {
         video.get(0).play();
       }
     }
