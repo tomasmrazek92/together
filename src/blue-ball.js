@@ -1,6 +1,5 @@
 // Inject the ball
-document.body.innerHTML +=
-  '<div id="follow-bubble"><span class="heading-style-h8">View</span></div>';
+$('body').append('<div id="follow-bubble"><span class="heading-style-h8">View</span></div>');
 
 // Blue logic
 const BLOG_ITEM_SELECTOR = '.list-b.w-dyn-items .w-dyn-item';

@@ -165,7 +165,7 @@ $(document).ready(function () {
   // -- Sub Nav Scroll
   function scrollToCurrent() {
     var container = $('.sub-navbar_pill');
-    var currentElement = $('.navbar_link.w--current');
+    var currentElement = container.find('.navbar_link.w--current');
 
     if (currentElement.length) {
       var containerOffset = container.offset().left;
@@ -213,9 +213,18 @@ $(document).ready(function () {
   $('[animated-hero]').each(function () {
     let span = $(this).find('h1').find('span');
     let tl = gsap.timeline();
-    tl.add(letterAnimation(span, 0.1));
-    tl.to($(this).find('.hp-hero_par').find('p'), { opacity: 1, stagger: 0.2 }, '<0.2');
-    tl.to($(this).find('.button'), { opacity: 1, stagger: 0.2 }, '<0.2');
+    let buttons = $(this).find('.button');
+    let paragraphs = $(this).find('.hp-hero_par').find('p');
+
+    if (span.length) {
+      tl.add(letterAnimation(span, 0.1));
+    }
+    if (paragraphs.length) {
+      tl.to(paragraphs, { opacity: 1, stagger: 0.2 }, '<0.2');
+    }
+    if (buttons.length) {
+      tl.to(buttons, { opacity: 1, stagger: 0.2 }, '<0.2');
+    }
   });
   // #endregion
 
