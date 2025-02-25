@@ -239,62 +239,37 @@ $(document).ready(function () {
 
     // Load
     handleHero(); // It will run now as prevWidth starts as null
-
-    // Swipers
-    const swiperInstances = [
-      [
-        '.section_hp-hero',
-        '.hp-hero_list',
-        'hero-swiper',
-        {
-          slidesPerView: 1,
-          spaceBetween: 40,
-          loop: true,
-          autoplay: {
-            delay: duration,
-            disableOnInteraction: false,
-          },
-          on: {
-            init: (swiper) => {
-              updateHero(swiper.realIndex);
-              sliderProgress(swiper.realIndex);
-            },
-            slideChange: (swiper) => {
-              updateHero(swiper.realIndex);
-              sliderProgress(swiper.realIndex);
-            },
-          },
-        },
-        'mobile',
-      ],
-      [
-        '.section_articles',
-        '.container-large',
-        'articles',
-        {
-          slidesPerView: 1,
-          spaceBetween: 40,
-          loop: true,
-          autoplay: {
-            delay: duration,
-            disableOnInteraction: false,
-          },
-          on: {
-            init: (swiper) => {
-              progressLine($('.section_articles'), swiper);
-            },
-            slideChange: (swiper) => {
-              progressLine($('.section_articles'), swiper);
-            },
-          },
-        },
-        'mobile',
-      ],
-    ];
-
-    // Load
-    initSwipers(swiperInstances);
   });
+
+  // Swipers
+  const swiperInstances = [
+    [
+      '.section_articles',
+      '.container-large-tkc',
+      'articles',
+      {
+        slidesPerView: 1,
+        spaceBetween: 40,
+        loop: true,
+        autoplay: {
+          delay: duration,
+          disableOnInteraction: false,
+        },
+        on: {
+          init: (swiper) => {
+            progressLine($('.section_articles'), swiper);
+          },
+          slideChange: (swiper) => {
+            progressLine($('.section_articles'), swiper);
+          },
+        },
+      },
+      'mobile',
+    ],
+  ];
+
+  // Load
+  initSwipers(swiperInstances);
 
   // Load Anim
   $('.hp-hero').each(function () {
