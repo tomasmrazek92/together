@@ -109,6 +109,7 @@ const manageSwiperInstance = (
     }
 
     const swiperElement = $(`${swiperSelector}.${uniqueKey}`)[0];
+    if (!$(swiperElement).length) return;
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && (shouldInitDesktop || shouldInitMobile || shouldInitAll)) {
@@ -164,20 +165,23 @@ export const initSwipers = (swiperInstances, swipersState) => {
 
 // Reusable Functions
 export const progressLine = (parent, swiper) => {
-  let progressLine = parent.find('.progress-line');
-  let duration = swiper.params.autoplay.delay;
-  let index = swiper.realIndex;
-  let navigations = parent.find('.navigation').find('.progress-bar');
+  $(parent).each(function () {
+    let el = $(this);
+    let progressLine = el.find('.progress-line');
+    let duration = swiper.params.autoplay.delay;
+    let index = swiper.realIndex;
+    let navigations = el.find('.navigation').find('.progress-bar');
 
-  let bar = navigations.eq(index);
-  let line = bar.find(progressLine);
+    let bar = navigations.eq(index);
+    let line = bar.find(progressLine);
 
-  progressLine.stop().css('width', '0');
-  navigations.removeClass('active');
+    progressLine.stop().css('width', '0');
+    navigations.removeClass('active');
 
-  bar.addClass('active');
+    bar.addClass('active');
 
-  line.animate({ width: '100%' }, duration);
+    line.animate({ width: '100%' }, duration);
+  });
 };
 
 export const getSwiperInstance = (classSelector, uniqueKey, timeout = 5000) => {
