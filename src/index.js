@@ -207,6 +207,54 @@ $(document).ready(function () {
     scrollToCurrent();
   }, 300);
 
+  // Dropdowns
+  $(document).ready(function () {
+    // Label Click
+    $('.dropdown-inner_respo-label').on('click', function () {
+      let dropdown = $(this).closest('.w-dropdown');
+      dropdown.trigger('w-close');
+    });
+
+    const targetElement = document.querySelector('.nav_dropdown .w-dropdown-toggle');
+
+    if (targetElement) {
+      const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          if (mutation.attributeName === 'class') {
+            const currentClassState = $(targetElement).hasClass('w--open');
+
+            if (currentClassState) {
+              $('.navbar_menu').css('overflow', 'hidden');
+            } else {
+              $('.navbar_menu').css('overflow', 'auto');
+            }
+          }
+        });
+      });
+
+      observer.observe(targetElement, { attributes: true });
+    }
+  });
+
+  // Banner Notification
+  $(document).ready(function () {
+    const $links = $('.subnav_link');
+    let currentIndex = 0;
+
+    function activateLink(index) {
+      $links.addClass('inactive').removeClass('active');
+      $links.eq(index).removeClass('inactive').addClass('active');
+
+      currentIndex = (currentIndex + 1) % $links.length;
+
+      setTimeout(function () {
+        activateLink(currentIndex);
+      }, 3000);
+    }
+
+    activateLink(currentIndex);
+  });
+
   // #endregion
 
   // #region -------------- Animate Hero Heading
