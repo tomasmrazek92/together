@@ -257,25 +257,6 @@ $(document).ready(function () {
 
   // #endregion
 
-  // #region -------------- Animate Hero Heading
-  $('[animated-hero]').each(function () {
-    let span = $(this).find('h1').find('span');
-    let tl = gsap.timeline();
-    let buttons = $(this).find('.button');
-    let paragraphs = $(this).find('.hp-hero_par').find('p');
-
-    if (span.length) {
-      tl.add(letterAnimation(span, 0.1));
-    }
-    if (paragraphs.length) {
-      tl.to(paragraphs, { opacity: 1, stagger: 0.2 }, '<0.2');
-    }
-    if (buttons.length) {
-      tl.to(buttons, { opacity: 1, stagger: 0.2 }, '<0.2');
-    }
-  });
-  // #endregion
-
   // #region -------------- Wrap Output Text
   $('[output-text]').each(function () {
     wrapLetters($(this));
