@@ -224,9 +224,9 @@ $(document).ready(function () {
             const currentClassState = $(targetElement).hasClass('w--open');
 
             if (currentClassState) {
-              $('.navbar_menu').css('overflow', 'hidden');
+              // $('.navbar_menu').css('overflow', 'hidden');
             } else {
-              $('.navbar_menu').css('overflow', 'auto');
+              // $('.navbar_menu').css('overflow', 'auto');
             }
           }
         });
