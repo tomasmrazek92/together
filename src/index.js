@@ -117,6 +117,46 @@ $(document).ready(function () {
     }
   });
 
+  // Respo Dropdown
+  const handleDropdownObserver = () => {
+    if (window.innerWidth <= 991) {
+      const observer = new MutationObserver(() => {
+        const hasOpenDropdown = document.querySelector('.nav_dropdown .dropdown.w--open');
+        const navbarMenu = document.querySelector('.navbar_menu');
+
+        if (navbarMenu) {
+          if (hasOpenDropdown) {
+            navbarMenu.style.overflow = 'hidden';
+            navbarMenu.scrollTop = 0;
+          } else {
+            navbarMenu.style.overflow = '';
+          }
+        }
+      });
+
+      document.querySelectorAll('.nav_dropdown .dropdown').forEach((dropdown) => {
+        observer.observe(dropdown, {
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+      });
+
+      window.dropdownObserver = observer;
+    } else {
+      if (window.dropdownObserver) {
+        window.dropdownObserver.disconnect();
+        window.dropdownObserver = null;
+      }
+      const navbarMenu = document.querySelector('.navbar_menu');
+      if (navbarMenu) {
+        navbarMenu.style.overflow = '';
+      }
+    }
+  };
+
+  handleDropdownObserver();
+  $(window).on('resize', handleDropdownObserver);
+
   // --- Menu Color Change
   updateNav();
   $(window).on('scroll', updateNav);
@@ -132,9 +172,10 @@ $(document).ready(function () {
       const elementTop = $(this).offset().top;
       const elementHeight = $(this).height();
 
-      if (windowTop <= elementTop + elementHeight - offset && windowTop >= elementTop - offset) {
+      const elementBottom = elementTop + elementHeight;
+      if (elementBottom >= windowTop + offset && elementTop <= windowTop + offset) {
         shouldAddClass = true;
-        return false; // break out of each loop
+        return false;
       }
     });
 
@@ -151,7 +192,7 @@ $(document).ready(function () {
     var element = $('.navbar');
     var classAdd = 'sticky';
     //console.log(scroll);
-    if (scroll >= 200) {
+    if (scroll >= 100) {
       if (!element.hasClass(classAdd)) {
         //console.log('a');
         element.addClass(classAdd);
