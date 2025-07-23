@@ -22,7 +22,7 @@ async function loadAllData() {
     });
     globalDepartments = Array.from(departments);
 
-    // console.log('2. Data loaded:', { jobs: globalJobs.length, departments: globalDepartments });
+    console.log('2. Data loaded:', { jobs: globalJobs.length, departments: globalDepartments });
     return true;
   } catch (error) {
     console.error('Error loading data:', error);

@@ -103,6 +103,136 @@ $(document).ready(function () {
       }
     }
   }
+
+  // --- Logos Carousel
+  class CircularArray {
+    constructor(array, windowSize, step) {
+      this.array = array;
+      this.windowSize = windowSize;
+      this.step = step;
+      this.currentIndex = 0;
+    }
+
+    getNextWindow() {
+      const result = [];
+      for (let i = 0; i < this.windowSize; i++) {
+        result.push(this.array[(this.currentIndex + i) % this.array.length]);
+      }
+      this.currentIndex = (this.currentIndex + this.step) % this.array.length;
+      return result;
+    }
+  }
+
+  class LogoCarousel {
+    constructor(options = {}) {
+      this.sourceSelector = options.sourceSelector || '#logos-source img';
+      this.topSelector = options.topSelector || '.hp-logos_box.top';
+      this.bottomSelector = options.bottomSelector || '.hp-logos_box.bottom';
+      this.windowSize = options.windowSize || 8;
+      this.step = options.step || 4;
+      this.duration = options.duration || 0.5;
+      this.stagger = options.stagger || 0.1;
+      this.delay = options.delay || 3;
+      this.repeatDelay = options.repeatDelay || 3;
+      this.ease = options.ease || 'power1.Out';
+
+      this.imgArray = [];
+      this.circularArray = null;
+      this.timeline = null;
+
+      this.init();
+    }
+
+    init() {
+      if (!$(this.sourceSelector).length) {
+        return;
+      }
+
+      this.loadImages();
+      this.setupCircularArray();
+      this.setupTimeline();
+    }
+
+    loadImages() {
+      $(this.sourceSelector).each((index, img) => {
+        this.imgArray.push($(img).attr('src'));
+      });
+    }
+
+    setupCircularArray() {
+      this.circularArray = new CircularArray(this.imgArray, this.windowSize, this.step);
+    }
+
+    displayNextWindow() {
+      let newArr = this.circularArray.getNextWindow();
+
+      $(this.topSelector).each((index, el) => {
+        $(el).css('background-image', `url("${newArr[index]}")`);
+      });
+
+      $(this.bottomSelector).each((index, el) => {
+        $(el).css('background-image', `url("${newArr[index + 4]}")`);
+      });
+    }
+
+    setupTimeline() {
+      this.timeline = gsap.timeline({
+        delay: this.delay,
+        onRepeat: () => this.displayNextWindow(),
+        repeat: -1,
+        repeatDelay: this.repeatDelay,
+      });
+
+      this.timeline
+        .to(this.topSelector, {
+          yPercent: -100,
+          duration: this.duration,
+          stagger: this.stagger,
+          ease: this.ease,
+        })
+        .to(
+          this.bottomSelector,
+          {
+            yPercent: -100,
+            duration: this.duration,
+            stagger: this.stagger,
+            ease: this.ease,
+          },
+          0
+        );
+    }
+
+    play() {
+      this.timeline?.play();
+    }
+
+    pause() {
+      this.timeline?.pause();
+    }
+
+    restart() {
+      this.timeline?.restart();
+    }
+
+    destroy() {
+      this.timeline?.kill();
+    }
+  }
+
+  $(document).ready(() => {
+    const logoCarousel = new LogoCarousel({
+      windowSize: 8,
+      step: 4,
+      duration: 0.5,
+      stagger: 0.1,
+      delay: 3,
+      repeatDelay: 3,
+    });
+
+    if ($(logoCarousel.sourceSelector).length) {
+      logoCarousel.displayNextWindow();
+    }
+  });
   // #endregion
 
   // #region -------------- Menu
@@ -709,7 +839,53 @@ $(document).ready(function () {
   // #endregion
 
   // #region -------------- Swipers
+  const visitedCookie = document.cookie
+    .split(';')
+    .find((cookie) => cookie.trim().startsWith('visited='));
+  const isFirstVisit = !visitedCookie;
+  if (isFirstVisit) {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    document.cookie = `visited=true; expires=${expiryDate.toUTCString()}; path=/`;
+  }
+
   const swiperInstances = [
+    // HP Hero
+    [
+      '.section_hp-hero',
+      '.hp-hero_slider',
+      'hp-hero',
+      {
+        slidesPerView: 1,
+        spaceBetween: 40,
+        effect: 'fade',
+        fadeEffect: {
+          crossfade: true,
+        },
+        loop: true,
+        autoHeight: window.innerWidth < 992,
+        autoplay: {
+          delay: isFirstVisit ? 20000 : 8000,
+          disableOnInteraction: false,
+        },
+        pagination: {
+          el: `.hp-hero_pagination`,
+          type: 'bullets',
+          bulletActiveClass: 'is-active',
+          bulletClass: 'hp-hero_pagination-dot',
+          clickable: true,
+        },
+        on: {
+          autoplayTimeLeft(s, time, progress) {
+            const $activeDot = $('.hp-hero_pagination-dot.is-active');
+            if ($activeDot.length) {
+              $activeDot.css('--progress', 1 - progress);
+            }
+          },
+        },
+      },
+      'desktop',
+    ],
     // Case Study
     [
       '.section_case-quote',

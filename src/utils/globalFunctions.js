@@ -51,18 +51,58 @@ const addUniqueClassesToElements = (context, swiperSelector, uniqueKey, controlS
 
 // Merge default and custom swiper options
 const getMergedSwiperOptions = (options, uniqueKey) => {
-  return Object.assign({}, options, {
+  // Default pagination config
+  const defaultPagination = {
+    el: `.swiper-navigation.${uniqueKey}`,
+    type: 'bullets',
+    bulletActiveClass: 'swiper-bullet-active',
+    bulletClass: 'swiper-bullet',
+    clickable: true,
+  };
+
+  // Merge pagination options if provided, otherwise use default
+  const paginationConfig = options.pagination
+    ? { ...defaultPagination, ...options.pagination }
+    : defaultPagination;
+
+  // Handle event merging
+  const existingEvents = options.on || {};
+  const enhancedEvents = {
+    ...existingEvents,
+    init: function (...args) {
+      // Call existing init if it exists
+      if (existingEvents.init) {
+        existingEvents.init.apply(this, args);
+      }
+      // Add ScrollTrigger refresh
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
+    },
+    resize: function (...args) {
+      // Call existing resize if it exists
+      if (existingEvents.resize) {
+        existingEvents.resize.apply(this, args);
+      }
+      ScrollTrigger.refresh();
+    },
+  };
+
+  return {
+    speed: 1000,
     navigation: {
       prevEl: `.swiper-arrow.prev.${uniqueKey}`,
       nextEl: `.swiper-arrow.next.${uniqueKey}`,
     },
-    pagination: {
-      el: `.swiper-navigation.${uniqueKey}`,
-      type: 'bullets',
-      bulletActiveClass: 'w-active',
-      bulletClass: 'w-slider-dot',
+    mousewheel: {
+      enabled: true,
+      forceToAxis: true,
+      thresholdDelta: 25,
     },
-  });
+    pagination: paginationConfig,
+    ...options,
+    on: enhancedEvents, // Override the 'on' property after spreading options
+  };
 };
 
 // This function manages Swiper instances: initializing or destroying them based on certain conditions
