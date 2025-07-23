@@ -862,6 +862,9 @@ $(document).ready(function () {
         fadeEffect: {
           crossfade: true,
         },
+        keyboard: {
+          enabled: true,
+        },
         loop: true,
         autoHeight: window.innerWidth < 992,
         autoplay: {
