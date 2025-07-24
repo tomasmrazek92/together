@@ -843,10 +843,13 @@ $(document).ready(function () {
     .split(';')
     .find((cookie) => cookie.trim().startsWith('visited='));
   const isFirstVisit = !visitedCookie;
+
   if (isFirstVisit) {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
     document.cookie = `visited=true; expires=${expiryDate.toUTCString()}; path=/`;
+  } else {
+    $('.swiper-slide.hp-slider').first().attr('data-swiper-autoplay', '8000');
   }
 
   const swiperInstances = [
@@ -866,10 +869,10 @@ $(document).ready(function () {
           enabled: true,
         },
         loop: true,
-        autoHeight: window.innerWidth < 992,
         autoplay: {
-          delay: isFirstVisit ? 20000 : 8000,
+          delay: 8000,
           disableOnInteraction: false,
+          waitForTransition: false,
         },
         pagination: {
           el: `.hp-hero_pagination`,
@@ -879,6 +882,12 @@ $(document).ready(function () {
           clickable: true,
         },
         on: {
+          autoplay() {
+            const $activeDot = $('.hp-hero_pagination-dot');
+            if ($activeDot.length) {
+              $activeDot.css('--progress', 0);
+            }
+          },
           autoplayTimeLeft(s, time, progress) {
             const $activeDot = $('.hp-hero_pagination-dot.is-active');
             if ($activeDot.length) {
