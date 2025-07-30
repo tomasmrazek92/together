@@ -104,7 +104,7 @@ $(document).ready(function () {
     }
   }
 
-  // --- Logos Carousel
+  /* Logos Carousel
   class CircularArray {
     constructor(array, windowSize, step) {
       this.array = array;
@@ -233,6 +233,8 @@ $(document).ready(function () {
       logoCarousel.displayNextWindow();
     }
   });
+  */
+
   // #endregion
 
   // #region -------------- Menu
@@ -882,10 +884,25 @@ $(document).ready(function () {
           clickable: true,
         },
         on: {
+          init(swiper) {},
           autoplay() {
             const $activeDot = $('.hp-hero_pagination-dot');
             if ($activeDot.length) {
               $activeDot.css('--progress', 0);
+            }
+          },
+          slideChange(swiper) {
+            const $currentSwiper = $(swiper.wrapperEl);
+            const isInView =
+              $currentSwiper.offset().top < $(window).scrollTop() + $(window).height() &&
+              $currentSwiper.offset().top + $currentSwiper.height() > $(window).scrollTop();
+
+            if (isInView) {
+              let activeSlide = $(swiper.slides).eq(swiper.activeIndex);
+              let theme = activeSlide.attr('data-swiper-theme');
+              let nav = $('.navbar_wrapper ');
+
+              nav.attr('data-nav-theme', theme);
             }
           },
           autoplayTimeLeft(s, time, progress) {
