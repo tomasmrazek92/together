@@ -104,7 +104,47 @@ $(document).ready(function () {
     }
   }
 
-  /* Logos Carousel
+  // --- Logos Marquee
+  function initCSSMarquee() {
+    const pixelsPerSecond = 12; // Set the marquee speed (pixels per second)
+    const marquees = document.querySelectorAll('[data-css-marquee]');
+
+    // Duplicate each [data-css-marquee-list] element inside its container
+    marquees.forEach((marquee) => {
+      marquee.querySelectorAll('[data-css-marquee-list]').forEach((list) => {
+        const duplicate = list.cloneNode(true);
+        marquee.appendChild(duplicate);
+      });
+    });
+
+    // Create an IntersectionObserver to check if the marquee container is in view
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          entry.target
+            .querySelectorAll('[data-css-marquee-list]')
+            .forEach(
+              (list) =>
+                (list.style.animationPlayState = entry.isIntersecting ? 'running' : 'paused')
+            );
+        });
+      },
+      { threshold: 0 }
+    );
+
+    // Calculate the width and set the animation duration accordingly
+    marquees.forEach((marquee) => {
+      marquee.querySelectorAll('[data-css-marquee-list]').forEach((list) => {
+        list.style.animationDuration = list.offsetWidth / pixelsPerSecond + 's';
+        list.style.animationPlayState = 'paused';
+      });
+      observer.observe(marquee);
+    });
+  }
+
+  initCSSMarquee();
+
+  /* --- Logos Carousel
   class CircularArray {
     constructor(array, windowSize, step) {
       this.array = array;
@@ -884,7 +924,11 @@ $(document).ready(function () {
           clickable: true,
         },
         on: {
-          init(swiper) {},
+          init(swiper) {
+            const $currentSwiper = $(swiper.wrapperEl);
+
+            // please only on desktop (992+) keep a track of if this element is in a view, we can use gsap for this if you want and if its in a view add a custom attribute to it
+          },
           autoplay() {
             const $activeDot = $('.hp-hero_pagination-dot');
             if ($activeDot.length) {
