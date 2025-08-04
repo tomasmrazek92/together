@@ -106,7 +106,7 @@ $(document).ready(function () {
 
   // --- Logos Marquee
   function initCSSMarquee() {
-    const pixelsPerSecond = 12; // Set the marquee speed (pixels per second)
+    const pixelsPerSecond = 18; // Set the marquee speed (pixels per second)
     const marquees = document.querySelectorAll('[data-css-marquee]');
 
     // Duplicate each [data-css-marquee-list] element inside its container
@@ -141,7 +141,6 @@ $(document).ready(function () {
       observer.observe(marquee);
     });
   }
-
   initCSSMarquee();
 
   /* --- Logos Carousel
