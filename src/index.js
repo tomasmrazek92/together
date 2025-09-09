@@ -459,9 +459,11 @@ $(document).ready(function () {
 
       currentIndex = (currentIndex + 1) % $links.length;
 
+      let timeout = index != 0 ? 3000 : 5000;
+
       setTimeout(function () {
         activateLink(currentIndex);
-      }, 3000);
+      }, timeout);
     }
 
     activateLink(currentIndex);
