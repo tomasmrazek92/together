@@ -890,7 +890,7 @@ $(document).ready(function () {
   if (isFirstVisit) {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
-    document.cookie = `visited=true; expires=${expiryDate.toUTCString()}; path=/`;
+    document.cookie = `slider-duration-visited=true; expires=${expiryDate.toUTCString()}; path=/`;
   } else {
     $('.swiper-slide.hp-slider').first().attr('data-swiper-autoplay', '8000');
   }
