@@ -884,7 +884,7 @@ $(document).ready(function () {
   // #region -------------- Swipers
   const visitedCookie = document.cookie
     .split(';')
-    .find((cookie) => cookie.trim().startsWith('visited='));
+    .find((cookie) => cookie.trim().startsWith('slider-duration-visited='));
   const isFirstVisit = !visitedCookie;
 
   if (isFirstVisit) {
