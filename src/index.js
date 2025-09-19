@@ -892,9 +892,8 @@ $(document).ready(function () {
     expiryDate.setDate(expiryDate.getDate() + 30);
     document.cookie = `slider-duration-visited=true; expires=${expiryDate.toUTCString()}; path=/`;
   } else {
-    $('.swiper-slide.hp-slider').first().attr('data-swiper-autoplay', '8000');
+    $('.swiper-slide.hp-slider').first().attr('data-swiper-autoplay', '4000');
   }
-
   const swiperInstances = [
     // HP Hero
     [
