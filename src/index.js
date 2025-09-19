@@ -362,14 +362,11 @@ $(document).ready(function () {
     var scroll = $(window).scrollTop();
     var element = $('.navbar');
     var classAdd = 'sticky';
-    //console.log(scroll);
     if (scroll >= 100) {
       if (!element.hasClass(classAdd)) {
-        //console.log('a');
         element.addClass(classAdd);
       }
     } else {
-      //console.log('a');
       element.removeClass(classAdd);
     }
   });
@@ -925,9 +922,11 @@ $(document).ready(function () {
         },
         on: {
           init(swiper) {
-            const $currentSwiper = $(swiper.wrapperEl);
-
-            // please only on desktop (992+) keep a track of if this element is in a view, we can use gsap for this if you want and if its in a view add a custom attribute to it
+            // Track slide impresion
+            gtag('event', 'slide_impression', {
+              slide_number: swiper.activeIndex,
+              send_to: 'G-BS43X21GZ2',
+            });
           },
           autoplay() {
             const $activeDot = $('.hp-hero_pagination-dot');
@@ -948,6 +947,12 @@ $(document).ready(function () {
 
               nav.attr('data-nav-theme', theme);
             }
+
+            // Track slide impresion
+            gtag('event', 'slide_impression', {
+              slide_number: swiper.activeIndex,
+              send_to: 'G-BS43X21GZ2',
+            });
           },
           autoplayTimeLeft(s, time, progress) {
             const $activeDot = $('.hp-hero_pagination-dot.is-active');
@@ -1017,7 +1022,6 @@ $(document).ready(function () {
           init: function (swiper) {
             // Define all
             $(this.slides).each((index, slide) => {
-              console.log(slide);
               slide.gsapTimeline = gsap.timeline({ paused: true });
               slide.gsapTimeline.add(typeCallout($(slide)));
             });
@@ -1046,6 +1050,22 @@ $(document).ready(function () {
       'all',
     ],
   ];
+
+  // Observe
+  const heroObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        swipers['hp-hero']['hp-hero_0'].swiperInstance.autoplay.start();
+      } else {
+        swipers['hp-hero']['hp-hero_0'].swiperInstance.autoplay.stop();
+      }
+    });
+  });
+
+  const $heroSection = $('.section_hp-hero');
+  if ($heroSection.length) {
+    heroObserver.observe($heroSection[0]);
+  }
 
   // --- Case Studies
   function playCSVideo(parent) {
