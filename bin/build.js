@@ -13,6 +13,7 @@ const ENTRY_POINTS = [
   'src/blog.js',
   'src/about.js',
   'src/blue-ball.js',
+  'src/gated.js',
 ];
 
 // Config dev serving
