@@ -75,9 +75,11 @@ $(document).ready(function () {
   addNoScrollbarClass();
 
   // --- Copy code inside blog articles
-  $('.w-richtext .w-embed pre').on('click', function () {
-    let codeToCopy = $(this).find('code').text();
-    copyToClipboard(codeToCopy);
+  $('.w-richtext .w-embed pre').on('click', function (e) {
+    if (e.target === this) {
+      let codeToCopy = $(this).find('code').text();
+      copyToClipboard(codeToCopy);
+    }
   });
 
   // --- Open Modal
