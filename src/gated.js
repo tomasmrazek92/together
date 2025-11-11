@@ -7,17 +7,13 @@ const gateOverlay = '.blog-2-article_overlay';
 const gatedContent = '[data-gated="content"]';
 let $gateMarkerElement = $();
 
-// Read Time
 function initReadTime() {
   $('[fs-readtime-element="time"]').each(function () {
     const $timeElement = $(this);
     const $contentElement = $('[fs-readtime-element="contents"]');
-
     if (!$contentElement.length) return;
-
     const wpm = $timeElement.attr('fs-readtime-wpm') || 200;
     const decimals = parseInt($timeElement.attr('fs-readtime-decimals')) || 0;
-
     const allText = $contentElement
       .find('*')
       .addBack()
@@ -26,58 +22,42 @@ function initReadTime() {
         return this.nodeType === 3;
       })
       .text();
-
     const wordsCount = (allText.match(/[\w\d''-]+/gi) || []).length;
     const readTime = wordsCount / wpm;
-
     $timeElement.text(!decimals && readTime < 0.5 ? '1' : readTime.toFixed(decimals));
   });
 }
+
 initReadTime();
 
 if ($(gatedContent).text().includes(gateMarker)) {
   $(gatedContent)
-    .find('*')
+    .find('p')
     .each(function () {
-      if ($(this).clone().children().remove().end().text().includes(gateMarker)) {
+      if ($(this).text().trim() === gateMarker) {
         $gateMarkerElement = $(this);
         return false;
       }
     });
 
   if (gatedContentStorage[articleUrl]) {
-    $gateMarkerElement.text($gateMarkerElement.text().replace(gateMarker, ''));
+    $gateMarkerElement.text('');
     $(gateSection).hide();
     $(gateOverlay).hide();
   } else {
-    let hideNext = false;
-    $(gatedContent)
-      .find('*')
-      .each(function () {
-        if ($(this).is($gateMarkerElement)) {
-          hideNext = true;
-          $(this).hide();
-          return;
-        }
-        if (hideNext && !$.contains($gateMarkerElement[0], this)) {
-          $(this).hide();
-        }
-      });
-
+    let $parent = $gateMarkerElement;
+    while ($parent.parent()[0] !== $(gatedContent)[0]) {
+      $parent = $parent.parent();
+    }
+    $parent.nextAll().remove();
+    $parent.remove();
     $(gateSection).show();
     $(gateOverlay).show();
   }
-} else {
 }
 
-$(`${gateSection} form`).on('submit', function (e) {
-  e.preventDefault();
-
+$(`${gateSection} form`).on('submit', function () {
   gatedContentStorage[articleUrl] = true;
   localStorage.setItem(gatedContentItem, JSON.stringify(gatedContentStorage));
-
-  $(gatedContent).find('*').show();
-  $gateMarkerElement.text($gateMarkerElement.text().replace(gateMarker, ''));
-
-  $(gateSection).hide();
+  setTimeout(() => location.reload(), 100);
 });
