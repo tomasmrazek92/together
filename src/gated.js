@@ -1,5 +1,3 @@
-console.log('console');
-
 const articleUrl = window.location.pathname;
 const gatedContentItem = 'gatedContent';
 const gatedContentStorage = JSON.parse(localStorage.getItem(gatedContentItem) || '{}');
@@ -9,12 +7,37 @@ const gateOverlay = '.blog-2-article_overlay';
 const gatedContent = '[data-gated="content"]';
 let $gateMarkerElement = $();
 
-console.log('Article URL:', articleUrl);
-console.log('Gated storage:', gatedContentStorage);
+// Read Time
+function initReadTime() {
+  $('[fs-readtime-element="time"]').each(function () {
+    const $timeElement = $(this);
+    const $contentElement = $('[fs-readtime-element="contents"]');
+
+    if (!$contentElement.length) return;
+
+    const wpm = $timeElement.attr('fs-readtime-wpm') || 200;
+    const decimals = parseInt($timeElement.attr('fs-readtime-decimals')) || 0;
+
+    const allText = $contentElement
+      .find('*')
+      .addBack()
+      .contents()
+      .filter(function () {
+        return this.nodeType === 3;
+      })
+      .text();
+
+    console.log(allText);
+
+    const wordsCount = (allText.match(/[\w\d''-]+/gi) || []).length;
+    const readTime = wordsCount / wpm;
+
+    $timeElement.text(!decimals && readTime < 0.5 ? '1' : readTime.toFixed(decimals));
+  });
+}
+initReadTime();
 
 if ($(gatedContent).text().includes(gateMarker)) {
-  console.log('Gate marker found in content');
-
   $(gatedContent)
     .find('*')
     .each(function () {
@@ -25,13 +48,10 @@ if ($(gatedContent).text().includes(gateMarker)) {
     });
 
   if (gatedContentStorage[articleUrl]) {
-    console.log('User has access - showing full content');
     $gateMarkerElement.text($gateMarkerElement.text().replace(gateMarker, ''));
     $(gateSection).hide();
     $(gateOverlay).hide();
   } else {
-    console.log('User needs to gate - hiding content');
-
     let hideNext = false;
     $(gatedContent)
       .find('*')
@@ -50,21 +70,16 @@ if ($(gatedContent).text().includes(gateMarker)) {
     $(gateOverlay).show();
   }
 } else {
-  console.log('No gate marker found - content is public');
 }
 
 $(`${gateSection} form`).on('submit', function (e) {
   e.preventDefault();
-  console.log('Form submitted - unlocking content');
 
   gatedContentStorage[articleUrl] = true;
   localStorage.setItem(gatedContentItem, JSON.stringify(gatedContentStorage));
-  console.log('Access saved to localStorage');
 
   $(gatedContent).find('*').show();
   $gateMarkerElement.text($gateMarkerElement.text().replace(gateMarker, ''));
-  console.log('Content shown');
 
   $(gateSection).hide();
-  console.log('Gate removed');
 });
