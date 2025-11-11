@@ -27,8 +27,6 @@ function initReadTime() {
       })
       .text();
 
-    console.log(allText);
-
     const wordsCount = (allText.match(/[\w\d''-]+/gi) || []).length;
     const readTime = wordsCount / wpm;
 
