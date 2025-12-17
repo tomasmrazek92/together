@@ -1121,4 +1121,216 @@ $(document).ready(function () {
       });
   }, 200);
   // #endregion
+
+  // #region ______________ Forms
+  // Business Email
+  $(document).ready(function () {
+    const invalidDomainPatterns = [
+      /gmail\.com$/i,
+      /googlemail\.com$/i,
+      /hotmail\.[a-z.]+$/i,
+      /outlook\.[a-z.]*$/i,
+      /live\.[a-z.]*$/i,
+      /msn\.com$/i,
+      /yahoo\.[a-z.]+$/i,
+      /icloud\.com$/i,
+      /me\.com$/i,
+      /mac\.com$/i,
+      /aol\.[a-z.]+$/i,
+      /proton(mail)?\.[a-z.]+$/i,
+      /tutanota\.[a-z.]+$/i,
+      /yandex\.[a-z.]+$/i,
+      /(mail|inbox|gmx)\.com$/i,
+      /(comcast|verizon|att|charter|cox)\.net$/i,
+      /(qq|126|163)\.com$/i,
+      /mail\.ru$/i,
+      /fastmail\.[a-z.]+$/i,
+      /hey\.com$/i,
+      /hushmail\.com$/i,
+      /(example|test)\.com$/i,
+      /zoho(mail)?\.com$/i,
+      /rediffmail\.com$/i,
+      /rocketmail\.com$/i,
+      /sbcglobal\.net$/i,
+      /bellsouth\.net$/i,
+      /earthlink\.net$/i,
+      /juno\.com$/i,
+      /naver\.com$/i,
+      /daum\.net$/i,
+      /hanmail\.net$/i,
+      /sina\.com$/i,
+      /sohu\.com$/i,
+      /web\.de$/i,
+      /gmx\.(net|de)$/i,
+      /freenet\.de$/i,
+      /orange\.fr$/i,
+      /laposte\.net$/i,
+      /libero\.it$/i,
+      /virgilio\.it$/i,
+      /tin\.it$/i,
+      /seznam\.cz$/i,
+      /o2\.pl$/i,
+      /wp\.pl$/i,
+      /interia\.pl$/i,
+      /ukr\.net$/i,
+      /rambler\.ru$/i,
+      /tuta\.io$/i,
+      /mailfence\.com$/i,
+      /runbox\.com$/i,
+      /startmail\.com$/i,
+      /mailbox\.org$/i,
+      /posteo\.(de|net)$/i,
+      /cock\.li$/i,
+      /(temp|throw|guerrilla|mailinator|10minute|minute|throwaway|trash|fake|spam|discard|getnada|temp-mail|mintemail|maildrop|sharklasers)mail/i,
+      /^(temp|throw|trash|fake|test|spam|disposable|burner|temporary)\./i,
+      /emailondeck\.com$/i,
+      /trashmail\.com$/i,
+      /mohmal\.com$/i,
+      /guerrillamail\.(com|net|org|biz|de)$/i,
+      /grr\.la$/i,
+      /sharklasers\.com$/i,
+      /guerrillamailblock\.(com|net)$/i,
+      /pokemail\.net$/i,
+      /spam4\.me$/i,
+      /maildrop\.cc$/i,
+      /mailnesia\.com$/i,
+      /mvrht\.com$/i,
+      /spamgourmet\.com$/i,
+      /mytemp\.email$/i,
+      /@[a-z0-9]{3,8}\.(tk|ml|ga|cf|gq)$/i,
+      /g[mn]a?[il]+\.com$/i,
+      /[hg]o?t?mail\.[a-z.]+$/i,
+      /ya?h?o+\.com$/i,
+      /out?lo+k\.com$/i,
+    ];
+
+    function isValidEmail(email) {
+      const emailRegex = /^[^\s@]{1,}@[^\s@]{2,}\.[^\s@]{2,}$/;
+      return emailRegex.test(email);
+    }
+
+    function validateEmail($input) {
+      const email = $input.val().trim();
+      $input.siblings('.email-error').remove();
+
+      if (!email) return true;
+
+      if (!isValidEmail(email)) {
+        $input.val('').attr('placeholder', 'Please enter a valid email address').addClass('error');
+        return false;
+      }
+
+      const domainPart = email.split('@')[1].toLowerCase();
+
+      if (invalidDomainPatterns.some((rx) => rx.test(domainPart))) {
+        $input.val('').attr('placeholder', 'Please enter a business email').addClass('error');
+        $input.after(
+          '<div class="email-error" style="color: var(--red); font-size: 14px; font-weight: 500; line-height: 1.2;">Please enter a valid email address</div>'
+        );
+        return false;
+      }
+
+      $input.removeClass('error');
+      return true;
+    }
+
+    $('form[data-email-validation]').each(function () {
+      const $form = $(this);
+
+      $form.on('submit', function (e) {
+        let isValid = true;
+
+        $form.find('input[type="email"]').each(function () {
+          if (!validateEmail($(this))) {
+            isValid = false;
+          }
+        });
+
+        if (!isValid) {
+          $form.find('input[type="email"]').focus();
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      $form.on('input', 'input[type="email"]', function () {
+        const $input = $(this);
+        $input.siblings('.email-error').remove();
+        $input.removeClass('error');
+      });
+    });
+  });
+
+  // Data Mirror Input
+  $('[data-mirror-input]').each(function () {
+    const $group = $(this);
+    const targetName = $group.attr('data-mirror-input');
+    const $otherCheckbox = $group.find('input[name="other"]');
+    const $otherInput = $(`[data-input-other="${targetName}"]`);
+    let otherActivated = false;
+
+    $group.find('input[type="checkbox"]').on('change', function () {
+      const selectedValues = [];
+
+      if ($(this).attr('name') === 'other' && $(this).is(':checked') && !otherActivated) {
+        otherActivated = true;
+        $otherCheckbox.closest('.form-checkbox').hide();
+        setTimeout(() => {
+          $otherCheckbox.click();
+        }, 300);
+        $otherInput.show();
+      }
+
+      $group.find('input[type="checkbox"]:checked').each(function () {
+        const checkboxName = $(this).attr('name');
+        if (checkboxName !== 'other') {
+          selectedValues.push(checkboxName);
+        }
+      });
+
+      if ($otherInput.is(':visible') && $otherInput.val()) {
+        selectedValues.push($otherInput.val());
+      }
+
+      let $hiddenInput = $(`input[type="hidden"][name="${targetName}"]`);
+
+      if ($hiddenInput.length === 0) {
+        $hiddenInput = $('<input>', {
+          type: 'hidden',
+          name: targetName,
+        });
+        $group.append($hiddenInput);
+      }
+
+      $hiddenInput.val(selectedValues.join(','));
+    });
+
+    $otherInput.on('input', function () {
+      const selectedValues = [];
+      const hasValue = $(this).val().length > 0;
+      const isChecked = $otherCheckbox.is(':checked');
+
+      if (hasValue && !isChecked) {
+        $otherCheckbox.click();
+      } else if (!hasValue && isChecked) {
+        $otherCheckbox.click();
+      }
+
+      $group.find('input[type="checkbox"]:checked').each(function () {
+        const checkboxName = $(this).attr('name');
+        if (checkboxName !== 'other') {
+          selectedValues.push(checkboxName);
+        }
+      });
+
+      if ($(this).val()) {
+        selectedValues.push($(this).val());
+      }
+
+      $(`input[type="hidden"][name="${targetName}"]`).val(selectedValues.join(','));
+    });
+
+    $otherInput.hide();
+  });
+  // #endregion
 });
