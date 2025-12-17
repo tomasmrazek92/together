@@ -452,6 +452,16 @@ $(document).ready(function () {
     const $links = $('.subnav_link');
     let currentIndex = 0;
 
+    $links.each(function () {
+      const $link = $(this);
+      const text = $link.html();
+      const updatedText = text.replace(
+        /Register Now/gi,
+        '<span class="text-weight-medium">Register Now</strong>'
+      );
+      $link.html(updatedText);
+    });
+
     function activateLink(index) {
       $links.addClass('inactive').removeClass('active');
       $links.eq(index).removeClass('inactive').addClass('active');
