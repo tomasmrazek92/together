@@ -62,8 +62,16 @@ $(function () {
         method: 'GET',
       })
         .then(function (html) {
-          var count = $(html).find('[data-models-count] .w-dyn-item').length;
+          var $page = $(html);
+          var count = $page.find('[data-model-reference]').length;
+          var hasProviderPage = $page.find('[data-provider-page]').length > 0;
+
           if (count > 0) $label.text(count + ' models');
+
+          if (!hasProviderPage) {
+            $item.closest('.w-dyn-item').css('pointer-events', 'none');
+            $item.find('a').remove();
+          }
         })
         .catch(function () {});
     }

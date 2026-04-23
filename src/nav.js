@@ -6,6 +6,24 @@ function navDropdowns() {
   var activeKey = null;
   var isOpen = false;
 
+  // -- A11y: set ARIA attributes on triggers and panels --
+  $triggers.each(function () {
+    var $t = $(this);
+    var key = $t.data('dropdown-trigger');
+    $t.attr({
+      'aria-expanded': 'false',
+      'aria-haspopup': 'true',
+    });
+    // Link trigger to its panel via aria-controls if the panel has an id
+    var $panel = $('[data-dropdown-target="' + key + '"]');
+    if (!$panel.attr('id')) {
+      $panel.attr('id', 'nav-dropdown-' + key);
+    }
+    $t.attr('aria-controls', $panel.attr('id'));
+  });
+
+  $dropdowns.attr('role', 'region');
+
   gsap.set($navDropdowns, { opacity: 0 });
 
   function getTargetX($trigger, $target) {
@@ -28,6 +46,10 @@ function navDropdowns() {
 
     var $target = $('[data-dropdown-target="' + key + '"]');
     var targetX = getTargetX($trigger, $target);
+
+    // Update ARIA states
+    $triggers.attr('aria-expanded', 'false');
+    $trigger.attr('aria-expanded', 'true');
 
     $triggers.removeClass('is-active');
     $trigger.addClass('is-active');
@@ -58,6 +80,8 @@ function navDropdowns() {
     if (!isOpen) return;
     activeKey = null;
     isOpen = false;
+    // Reset ARIA states
+    $triggers.attr('aria-expanded', 'false');
     gsap.killTweensOf($navDropdowns);
     gsap.to($navDropdowns, {
       opacity: 0,
@@ -75,6 +99,63 @@ function navDropdowns() {
     $triggers.on('mouseenter', function () {
       var key = $(this).data('dropdown-trigger');
       openDropdown(key, $(this));
+    });
+
+    // -- A11y: keyboard support for dropdown triggers --
+    $triggers.on('keydown', function (e) {
+      var $t = $(this);
+      var key = $t.data('dropdown-trigger');
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (activeKey === key) {
+          closeAll();
+          $t.focus();
+        } else {
+          openDropdown(key, $t);
+          // Move focus into the opened panel's first focusable element
+          var $panel = $('[data-dropdown-target="' + key + '"]');
+          var $firstFocusable = $panel.find('a, button, input, [tabindex]:not([tabindex="-1"])').first();
+          if ($firstFocusable.length) {
+            $firstFocusable.focus();
+          }
+        }
+      }
+
+      if (e.key === 'Escape') {
+        if (isOpen) {
+          closeAll();
+          $t.focus();
+        }
+      }
+
+      // Arrow keys to move between triggers
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        var idx = $triggers.index($t);
+        var next =
+          e.key === 'ArrowRight'
+            ? (idx + 1) % $triggers.length
+            : (idx - 1 + $triggers.length) % $triggers.length;
+        $triggers.eq(next).focus();
+      }
+    });
+
+    // -- A11y: Escape key while focus is inside a dropdown panel --
+    $navDropdowns.on('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen) {
+        var $activeTrigger = $triggers.filter('[data-dropdown-trigger="' + activeKey + '"]');
+        closeAll();
+        $activeTrigger.focus();
+      }
+    });
+
+    // -- A11y: close when focus leaves the entire nav area --
+    $('.nav-box').on('focusout', function (e) {
+      // relatedTarget is the element receiving focus — if it's outside .nav-box, close
+      if (!e.relatedTarget || !$(e.relatedTarget).closest('.nav-box').length) {
+        closeAll();
+      }
     });
 
     // Plain nav items (no dropdown) close the menu
@@ -131,13 +212,21 @@ function responsiveNav() {
     const open = () => {
       isOpen = true;
       $nav.attr('data-nav-status', 'open');
+      $trigger.attr('aria-expanded', 'true');
       tl.play();
+      // Move focus to first focusable item inside menu
+      tl.eventCallback('onComplete', () => {
+        var $first = $menu.find('a, button, input, [tabindex]:not([tabindex="-1"])').first();
+        if ($first.length) $first.focus();
+      });
     };
 
     const close = () => {
       isOpen = false;
       $nav.attr('data-nav-status', 'closed');
+      $trigger.attr('aria-expanded', 'false');
       tl.reverse();
+      $trigger.focus();
     };
 
     const reset = () => {
@@ -158,8 +247,23 @@ function responsiveNav() {
 
       if (!$trigger.length || !$menu.length) return;
 
+      // A11y: ARIA for mobile hamburger menu
+      $trigger.attr({
+        'aria-expanded': 'false',
+        'aria-label': 'Menu',
+      });
+      if (!$menu.attr('id')) $menu.attr('id', 'nav-mobile-menu');
+      $trigger.attr('aria-controls', $menu.attr('id'));
+
       // Only build timeline if we start on mobile
       if (isMobile()) buildTimeline();
+
+      // A11y: Escape key closes mobile menu
+      $menu.on('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen && !isAnimating) {
+          close();
+        }
+      });
 
       $trigger.on('click', () => {
         if (!isMobile()) return;

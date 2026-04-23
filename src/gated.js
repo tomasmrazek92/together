@@ -3,10 +3,130 @@ $(document).ready(function () {
   const gatedContentItem = 'gatedContent';
   const gatedContentStorage = JSON.parse(localStorage.getItem(gatedContentItem) || '{}');
   const gateMarker = '{gated-content-start}';
-  const gateSection = '.section_blog-2-gated';
-  const gateOverlay = '.blog-2-article_overlay';
+  const gateSection = '.section_blog-gated';
+  const gateOverlay = '.blog-article_overlay';
   const gatedContent = '[data-gated="content"]';
   let $gateMarkerElement = $();
+
+  const fuzzyProviders = [
+    'gmail',
+    'googlemail',
+    'yahoo',
+    'hotmail',
+    'outlook',
+    'icloud',
+    'proton',
+    'protonmail',
+    'yandex',
+    'tutanota',
+    'btinternet',
+    'talktalk',
+    'ntlworld',
+    'btopenworld',
+  ];
+
+  const exactDomains = new Set([
+    'aol.com',
+    'aol.co.uk',
+    'msn.com',
+    'gmx.com',
+    'live.com',
+    'me.com',
+    'mac.com',
+    'zoho.com',
+    'inbox.com',
+    'mail.com',
+    'email.com',
+    'comcast.net',
+    'verizon.net',
+    'att.net',
+    'charter.net',
+    'cox.net',
+    'test.com',
+    'example.com',
+    'example.org',
+    'example.net',
+    'domain.com',
+    'yourdomain.com',
+    'acme.com',
+    'gotransverse.com',
+    'alldata.com',
+  ]);
+
+  const reservedTlds = new Set(['test', 'example', 'invalid', 'localhost']);
+
+  function editDistance(a, b) {
+    const m = a.length;
+    const n = b.length;
+    if (!m || !n) return m + n;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
+        }
+      }
+    }
+    return dp[m][n];
+  }
+
+  function isBlockedDomain(domain) {
+    domain = (domain || '').toLowerCase();
+    if (!domain) return false;
+    if (reservedTlds.has(domain.split('.').pop())) return true;
+    if (exactDomains.has(domain)) return true;
+    const firstLabel = domain.split('.')[0];
+    return fuzzyProviders.some((p) => editDistance(firstLabel, p) <= 1);
+  }
+
+  const emailErrorStyle =
+    'color: var(--brand--brand-orange); font-size: 0.875em; font-weight: 500; line-height: 1.2;';
+
+  function isValidEmail(email) {
+    return /^[^\s@]{1,}@[^\s@]{2,}\.[^\s@]{2,}$/.test(email);
+  }
+
+  function showEmailError($input, message, placeholder) {
+    $input.val('').attr('placeholder', placeholder).addClass('error');
+    $input.after(`<div class="email-error" style="${emailErrorStyle}">${message}</div>`);
+  }
+
+  function validateEmail($input) {
+    const email = $input.val();
+    $input.siblings('.email-error').remove();
+
+    if (!email) {
+      showEmailError($input, 'Please enter your email address', 'Please enter your email address');
+      return false;
+    }
+    if (!isValidEmail(email)) {
+      showEmailError(
+        $input,
+        'Please enter a valid email address',
+        'Please enter a valid email address'
+      );
+      return false;
+    }
+    if (isBlockedDomain(email.split('@')[1])) {
+      showEmailError($input, 'Please use your business email address', 'Please enter a business email');
+      return false;
+    }
+
+    $input.removeClass('error');
+    return true;
+  }
+
+  function validateForm($form) {
+    let isValid = true;
+    $form.find('input[type="email"]').each(function () {
+      if (!validateEmail($(this))) isValid = false;
+    });
+    return isValid;
+  }
 
   function initReadTime() {
     $('[fs-readtime-element="time"]').each(function () {
@@ -30,6 +150,56 @@ $(document).ready(function () {
   }
 
   initReadTime();
+
+  $(document).on('click', '[data-button-instance="submit-form"]', function (e) {
+    e.preventDefault();
+    const $btn = $(this);
+    if ($btn.data('mirrorActive')) return;
+
+    const $form = $btn.closest('form');
+    if (!$form.length) return;
+    if (!validateForm($form)) return;
+    const $submit = $form.find('input[type="submit"]').first();
+    if (!$submit.length) return;
+
+    const input = $submit[0];
+    const $btnText = $btn.find('[data-button-text]').length
+      ? $btn.find('[data-button-text]')
+      : $btn;
+    const originalText = $btnText.text();
+
+    $btn.data('mirrorActive', true);
+    input.click();
+
+    if (!input.disabled) {
+      $btn.data('mirrorActive', false);
+      return;
+    }
+
+    let poll, safety;
+    const cleanup = () => {
+      clearInterval(poll);
+      clearTimeout(safety);
+      watcher.disconnect();
+      $btnText.text(originalText);
+      $btn.prop('disabled', false);
+      $btn.data('mirrorActive', false);
+    };
+
+    const watcher = new MutationObserver(() => {
+      if (!$form.is(':visible')) cleanup();
+    });
+    const parent = $form.parent()[0];
+    if (parent) watcher.observe(parent, { attributes: true, childList: true, subtree: true });
+
+    poll = setInterval(() => {
+      $btnText.text(input.value || originalText);
+      $btn.prop('disabled', input.disabled);
+      if (!input.disabled) cleanup();
+    }, 100);
+
+    safety = setTimeout(cleanup, 30000);
+  });
 
   setTimeout(() => {
     if ($(gatedContent).text().includes(gateMarker)) {
@@ -71,85 +241,8 @@ $(document).ready(function () {
 
     $('form').on('submit', function (e) {
       const $form = $(this);
-      let isValid = true;
 
-      const invalidDomains = [
-        'gmail.com',
-        'acme.com',
-        'gmali.com',
-        'hotmail.com',
-        'icloud.com',
-        'yahoo.com',
-        'zoho.com',
-        'aol.com',
-        'outlook.com',
-        'live.com',
-        'msn.com',
-        'gotransverse.com',
-        'alldata.com',
-        'me.com',
-        'comcast.net',
-        'verizon.net',
-        'att.net',
-        'charter.net',
-        'cox.net',
-        'inbox.com',
-        'mail.com',
-        'gmx.com',
-        'protonmail.com',
-        'tutanota.com',
-        'yandex.com',
-        'aol.co.uk',
-        'btinternet.com',
-        'talktalk.net',
-        'ntlworld.com',
-        'mac.com',
-        'googlemail.com',
-        'btopenworld.com',
-      ];
-
-      function isValidEmail(email) {
-        const emailRegex = /^[^\s@]{1,}@[^\s@]{2,}\.[^\s@]{2,}$/;
-        return emailRegex.test(email);
-      }
-
-      function validateEmail($input) {
-        const email = $input.val();
-        $input.siblings('.email-error').remove();
-
-        if (!email) return true;
-
-        if (!isValidEmail(email)) {
-          $input
-            .val('')
-            .attr('placeholder', 'Please enter a valid email address')
-            .addClass('error');
-          $input.after(
-            '<div class="email-error" style="color: var(--red); font-size: 14px; font-weight: 500; line-height: 1.2;">Please enter a valid email address</div>'
-          );
-          return false;
-        }
-
-        const domainPart = email.split('@')[1];
-        if (invalidDomains.includes(domainPart)) {
-          $input.val('').attr('placeholder', 'Please enter a business email').addClass('error');
-          $input.after(
-            '<div class="email-error" style="color: var(--red); font-size: 14px; font-weight: 500; line-height: 1.2;">Please use your business email address</div>'
-          );
-          return false;
-        }
-
-        $input.removeClass('error');
-        return true;
-      }
-
-      $form.find('input[type="email"]').each(function () {
-        if (!validateEmail($(this))) {
-          isValid = false;
-        }
-      });
-
-      if (!isValid) {
+      if (!validateForm($form)) {
         e.preventDefault();
         return false;
       }
