@@ -8,6 +8,79 @@ $(document).ready(function () {
   const gatedContent = '[data-gated="content"]';
   let $gateMarkerElement = $();
 
+  const $gatedContentEl = $(gatedContent);
+  const hasGateMarker =
+    $gatedContentEl.length && $gatedContentEl.text().includes(gateMarker);
+  let $gatedSkeleton = $();
+
+  if (hasGateMarker) {
+    if (!document.getElementById('gated-skeleton-styles')) {
+      $('head').append(
+        '<style id="gated-skeleton-styles">' +
+          '.gated-skeleton{display:flex;flex-direction:column;gap:0.85em;}' +
+          '.gated-skeleton__bar{height:1em;border-radius:4px;background:linear-gradient(90deg,#ececec 0%,#f6f6f6 50%,#ececec 100%);background-size:200% 100%;animation:gatedSkeletonShimmer 1.4s ease-in-out infinite;}' +
+          '.gated-skeleton__bar--short{width:62%;}' +
+          '.gated-skeleton__gap{height:0.6em;}' +
+          '@keyframes gatedSkeletonShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}' +
+          '</style>'
+      );
+    }
+    $gatedSkeleton = $(
+      '<div class="gated-skeleton" aria-hidden="true">' +
+        '<div class="gated-skeleton__bar"></div>' +
+        '<div class="gated-skeleton__bar"></div>' +
+        '<div class="gated-skeleton__bar"></div>' +
+        '<div class="gated-skeleton__bar gated-skeleton__bar--short"></div>' +
+        '<div class="gated-skeleton__gap"></div>' +
+        '<div class="gated-skeleton__bar"></div>' +
+        '<div class="gated-skeleton__bar"></div>' +
+        '<div class="gated-skeleton__bar gated-skeleton__bar--short"></div>' +
+        '</div>'
+    );
+    $gatedContentEl.after($gatedSkeleton).hide();
+  }
+
+  let pendingScrollY = null;
+  const GATED_SCROLL_KEY = 'gatedScrollState';
+
+  if (hasGateMarker) {
+    let isReload = false;
+    try {
+      const nav =
+        performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      isReload = nav
+        ? nav.type === 'reload'
+        : performance.navigation && performance.navigation.type === 1;
+    } catch (e) {}
+
+    const savedRaw = sessionStorage.getItem(GATED_SCROLL_KEY);
+    sessionStorage.removeItem(GATED_SCROLL_KEY);
+    if (isReload && savedRaw) {
+      try {
+        const parsed = JSON.parse(savedRaw);
+        if (parsed && parsed.url === location.pathname && typeof parsed.y === 'number') {
+          if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+          }
+          window.scrollTo(0, 0);
+          pendingScrollY = parsed.y;
+        }
+      } catch (e) {}
+    }
+
+    window.addEventListener('pagehide', () => {
+      try {
+        sessionStorage.setItem(
+          GATED_SCROLL_KEY,
+          JSON.stringify({
+            url: location.pathname,
+            y: window.scrollY || window.pageYOffset || 0,
+          })
+        );
+      } catch (e) {}
+    });
+  }
+
   const fuzzyProviders = [
     'gmail',
     'googlemail',
@@ -201,6 +274,46 @@ $(document).ready(function () {
     safety = setTimeout(cleanup, 30000);
   });
 
+  const finalizeScroll = () => {
+    if (pendingScrollY !== null && !isNaN(pendingScrollY)) {
+      window.scrollTo(0, pendingScrollY);
+      pendingScrollY = null;
+    }
+  };
+
+  const revealGatedContent = () => {
+    if (!hasGateMarker) {
+      finalizeScroll();
+      return;
+    }
+
+    $gatedContentEl.css('visibility', 'hidden').show();
+    const contentHeight = $gatedContentEl.outerHeight();
+    $gatedContentEl.hide().css('visibility', '');
+
+    const duration = 400;
+
+    $gatedSkeleton.css({
+      height: $gatedSkeleton.outerHeight(),
+      overflow: 'hidden',
+      transition:
+        'height ' + duration + 'ms ease, opacity ' + (duration - 50) + 'ms ease',
+    });
+
+    void $gatedSkeleton[0].offsetHeight;
+
+    $gatedSkeleton.css({
+      height: contentHeight + 'px',
+      opacity: 0,
+    });
+
+    setTimeout(() => {
+      $gatedContentEl.show();
+      $gatedSkeleton.remove();
+      finalizeScroll();
+    }, duration + 30);
+  };
+
   setTimeout(() => {
     if ($(gatedContent).text().includes(gateMarker)) {
       const $paragraphs = $(gatedContent).find('p');
@@ -234,10 +347,12 @@ $(document).ready(function () {
 
         markerNode.textContent = '';
 
-        $(gateSection).show();
+        $(gateSection).css('display', 'block');
         $(gateOverlay).show();
       }
     }
+
+    revealGatedContent();
 
     $('form').on('submit', function (e) {
       const $form = $(this);
