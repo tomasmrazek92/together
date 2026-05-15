@@ -48,33 +48,50 @@ $(document).ready(function () {
 
 // Models Providers
 $(function () {
-  var $items = $('.models-marquee_item');
   var batchSize = 10;
   var delay = 300;
+  var cache = {}; // href -> { count, hasProviderPage }
+  var seen = new WeakSet(); // items we've already handled
+
+  function applyResult($item, result) {
+    if (result.count > 0) {
+      $item.find('[data-label]').text(result.count + ' models').css('opacity', 1);
+    }
+    if (!result.hasProviderPage) {
+      $item.closest('.w-dyn-item').css('pointer-events', 'none');
+      $item.find('a').remove();
+    }
+  }
 
   function processItem($item) {
+    var el = $item[0];
+    if (!el || seen.has(el)) return;
+    seen.add(el);
+
     var href = $item.find('a').attr('href');
-    var $label = $item.find('[data-label]');
+    if (!href) return;
 
-    if (href) {
-      return $.ajax({
-        url: href,
-        method: 'GET',
-      })
-        .then(function (html) {
-          var $page = $(html);
-          var count = $page.find('[data-model-reference]').length;
-          var hasProviderPage = $page.find('[data-provider-page]').length > 0;
-
-          if (count > 0) $label.text(count + ' models');
-
-          if (!hasProviderPage) {
-            $item.closest('.w-dyn-item').css('pointer-events', 'none');
-            $item.find('a').remove();
-          }
-        })
-        .catch(function () {});
+    if (cache[href]) {
+      applyResult($item, cache[href]);
+      return;
     }
+
+    return $.ajax({ url: href, method: 'GET' })
+      .then(function (html) {
+        var $page = $(html);
+        cache[href] = {
+          count: $page.find('[data-model-reference]').length,
+          // [data-provider-page] sits on .page-wrapper (a body child), which is a
+          // root in the parsed collection — .find() searches descendants only,
+          // so check both the roots (.filter) and their descendants (.find).
+          hasProviderPage:
+            $page.filter('[data-provider-page]').length +
+              $page.find('[data-provider-page]').length >
+            0,
+        };
+        applyResult($item, cache[href]);
+      })
+      .catch(function () {});
   }
 
   function runBatch(items, index) {
@@ -92,6 +109,28 @@ $(function () {
     });
   }
 
-  var itemsArray = $items.toArray();
-  runBatch(itemsArray, 0);
+  // Initial pass — whatever's in the DOM right now (originals, plus any clones already created).
+  runBatch($('.models-marquee_item').toArray(), 0);
+
+  // Catch clones the marquee library creates later (on init, on resize, etc.).
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        var items =
+          node.matches && node.matches('.models-marquee_item')
+            ? [node]
+            : node.querySelectorAll
+            ? Array.from(node.querySelectorAll('.models-marquee_item'))
+            : [];
+        items.forEach(function (el) {
+          processItem($(el));
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll('.models-marquee').forEach(function (el) {
+    observer.observe(el, { childList: true, subtree: true });
+  });
 });
