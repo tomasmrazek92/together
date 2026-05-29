@@ -96,9 +96,35 @@ function navDropdowns() {
   }
 
   if ($(window).width() >= 991) {
+    // Hover intent — only open if the cursor stays on the trigger for a beat.
+    // When the nav is already open, skip the delay so switching feels instant.
+    var HOVER_INTENT_DELAY = 120;
+    var hoverIntentTimer = null;
+
+    var clearHoverIntent = function () {
+      if (hoverIntentTimer) {
+        clearTimeout(hoverIntentTimer);
+        hoverIntentTimer = null;
+      }
+    };
+
     $triggers.on('mouseenter', function () {
-      var key = $(this).data('dropdown-trigger');
-      openDropdown(key, $(this));
+      var $t = $(this);
+      var key = $t.data('dropdown-trigger');
+      clearHoverIntent();
+      if (isOpen) {
+        // Already showing a dropdown — switch immediately
+        openDropdown(key, $t);
+      } else {
+        hoverIntentTimer = setTimeout(function () {
+          // Only open if cursor is still on this trigger
+          if ($t.is(':hover')) openDropdown(key, $t);
+        }, HOVER_INTENT_DELAY);
+      }
+    });
+
+    $triggers.on('mouseleave', function () {
+      clearHoverIntent();
     });
 
     // -- A11y: keyboard support for dropdown triggers --
@@ -160,10 +186,12 @@ function navDropdowns() {
 
     // Plain nav items (no dropdown) close the menu
     $plainNavItems.on('mouseenter', function () {
+      clearHoverIntent();
       closeAll();
     });
 
     $('.nav-box').on('mouseleave', function () {
+      clearHoverIntent();
       closeAll();
     });
   }
@@ -213,12 +241,13 @@ function responsiveNav() {
       isOpen = true;
       $nav.attr('data-nav-status', 'open');
       $trigger.attr('aria-expanded', 'true');
-      tl.play();
-      // Move focus to first focusable item inside menu
+      // Move focus to first focusable item inside menu — preserve isAnimating reset
       tl.eventCallback('onComplete', () => {
+        isAnimating = false;
         var $first = $menu.find('a, button, input, [tabindex]:not([tabindex="-1"])').first();
         if ($first.length) $first.focus();
       });
+      tl.play();
     };
 
     const close = () => {
