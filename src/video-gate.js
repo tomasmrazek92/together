@@ -24,6 +24,7 @@
       var enc = SOURCES[i];
       if (enc) box.setAttribute('data-bunny-lightbox-src', atob(enc));
       box.setAttribute('data-state', 'unlocked');
+      document.querySelector(FORM_SELECTOR).style.display = 'none';
     });
   }
 
