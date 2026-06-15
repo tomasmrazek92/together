@@ -168,7 +168,7 @@ $(function () {
   var expanded = false; // persists across Finsweet re-inits
   var items = []; // rebuilt by cacheAndSort() from the live DOM
   var overflow = [];
-  var structuralObserver, displayObserver, setupTimer, renderTimer;
+  var structuralObserver, displayObserver, setupTimer, renderTimer, $empty;
 
   injectStyles();
 
@@ -224,6 +224,7 @@ $(function () {
     var term = ($input.val() || '').trim().toLowerCase();
     var searching = term.length > 0;
     var availIndex = 0; // running position among Finsweet-available items (DOM order)
+    var visibleCount = 0; // items actually on screen after collapse/search
 
     items.forEach(function (el) {
       var selected = isSelected(el);
@@ -241,11 +242,14 @@ $(function () {
       // Selected items stay visible regardless of collapse/search.
       var hideByCollapse = !expanded && !searching && isOverflow && !selected;
       var hideBySearch = searching && el._provKey.indexOf(term) === -1 && !selected;
-      $(el).toggleClass(HIDE_CLASS, hideByCollapse || hideBySearch);
+      var hidden = hideByCollapse || hideBySearch;
+      $(el).toggleClass(HIDE_CLASS, hidden);
+      if (!fsHidden && !hidden) visibleCount++;
       setHighlight(el, searching ? term : '');
     });
 
     $list.toggleClass('has-query', searching); // drives the close (X) visibility
+    if ($empty) $empty.toggle(visibleCount === 0); // empty state when nothing shows
     renderAction(searching, Math.max(0, availIndex - KEEP));
   }
 
@@ -347,6 +351,17 @@ $(function () {
     setTimeout(resetSelected, 150);
   });
 
+  // Empty state — shown when nothing is visible (search miss, or a category
+  // with no providers). Reuses an existing .models_sort-empty if the design has
+  // one, else creates a default. Lives OUTSIDE the cms list so toggling it never
+  // trips the structural/display observers.
+  $empty = $list.find('.models_sort-empty').first();
+  if (!$empty.length) {
+    $empty = $('<div class="models_sort-empty">No providers found</div>');
+    $cmsList.closest('.w-dyn-list').after($empty);
+  }
+  $empty.hide();
+
   setup(); // initial build + attach observers
 
   function injectStyles() {
@@ -362,7 +377,9 @@ $(function () {
       // matched run + clickable action
       '.' + MARK_CLASS + '{font-weight:700;color:var(--shades--black-opacity-40);}' +
       '.models_sort-action{cursor:pointer;}' +
-      '.models_sort-action.is-action-hidden{display:none !important;}';
+      '.models_sort-action.is-action-hidden{display:none !important;}' +
+      // empty state (only styled if we created the default; restyle in Webflow)
+      '.models_sort-empty{padding:10px 14px;font-size:12.5px;color:var(--shades--black-opacity-40);}';
     $('head').append('<style id="provider-search-styles">' + css + '</style>');
   }
 });
