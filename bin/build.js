@@ -7,7 +7,13 @@ const BUILD_DIRECTORY = 'dist';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Config entrypoint files
-const ENTRY_POINTS = ['src/index.js', 'src/gated.js', 'src/models.js', 'src/video-gate.js'];
+const ENTRY_POINTS = [
+  'src/index.js',
+  'src/gated.js',
+  'src/models.js',
+  'src/video-gate.js',
+  'src/ptu-calculator.js',
+];
 
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;

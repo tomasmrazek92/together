@@ -134,3 +134,235 @@ $(function () {
     observer.observe(el, { childList: true, subtree: true });
   });
 });
+
+// Provider dropdown — searchable + collapsible
+// Layers on top of Finsweet List without fighting it:
+//   • Finsweet owns availability — it sets inline `display:none` on empty-facet
+//     providers, and re-renders/reorders the whole facet list when ANOTHER
+//     filter changes the available set. We re-init on those structural changes
+//     and only ever ADD hiding (a class with !important) — never force-show —
+//     so a Finsweet-hidden provider stays hidden even if it matches.
+//   • Selection state (the checkmark) is driven by the real checkbox `:checked`.
+//   • Reset clears selected providers by clicking each checked box so Finsweet
+//     (and Webflow's checkbox) register the change the same as a user click.
+$(function () {
+  var KEEP = 10; // first N stay as the curated "top providers", untouched
+  var HIDE_CLASS = 'is-provider-hidden'; // our own hide — display:none !important
+  var MARK_CLASS = 'is-provider-match'; // highlight wrapper around the matched run
+
+  // Scope to the provider dropdown (the one that has the search input).
+  var $list = $('.models_sort-dropdown-list')
+    .filter(function () {
+      return $(this).find('.models_sort-dropdown-input').length > 0;
+    })
+    .first();
+  if (!$list.length) return;
+
+  var $input = $list.find('.models_sort-dropdown-input').first();
+  var $close = $list.find('.model_sort-close').first();
+  var $action = $list.find('.models_sort-action').first();
+  var $actionText = $action.find('.btn-text').first();
+  var $cmsList = $list.find('.models_sort-dropdown-cms-list').first();
+  if (!$cmsList.length) return;
+
+  var expanded = false; // persists across Finsweet re-inits
+  var items = []; // rebuilt by cacheAndSort() from the live DOM
+  var overflow = [];
+  var structuralObserver, displayObserver, setupTimer, renderTimer;
+
+  injectStyles();
+
+  // ── helpers ──────────────────────────────────────────────────────────
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Read the provider name from fs-list-value (clean — never carries our
+  // highlight markup), falling back to the visible label text.
+  function providerName(el) {
+    var input = el.querySelector('input[fs-list-value]');
+    var name = input ? input.getAttribute('fs-list-value') : '';
+    return (name || $(el).find('.models_sort-dropdown-text').first().text() || '').trim();
+  }
+
+  function setHighlight(el, term) {
+    var $text = $(el).find('.models_sort-dropdown-text').first();
+    if (!term) {
+      $text.text(el._provText);
+      return;
+    }
+    var re = new RegExp('(' + escapeRegex(term) + ')', 'ig');
+    $text.html(el._provText.replace(re, '<span class="' + MARK_CLASS + '">$1</span>'));
+  }
+
+  function isSelected(el) {
+    var cb = el.querySelector('input[type="checkbox"]');
+    return !!(cb && cb.checked);
+  }
+
+  function hasSelected() {
+    return items.some(isSelected);
+  }
+
+  function renderAction(searching, overflowCount) {
+    // Reset wins whenever anything is selected — so you can always clear a
+    // selection, even after the search is cleared and the item collapses away.
+    if (hasSelected()) {
+      $actionText.text('Reset');
+      $action.removeClass('is-action-hidden').attr('data-mode', 'reset');
+      return;
+    }
+    if (!searching && !expanded && overflowCount > 0) {
+      $actionText.text('Show ' + overflowCount + ' more provider' + (overflowCount === 1 ? '' : 's'));
+      $action.removeClass('is-action-hidden').attr('data-mode', 'expand');
+      return;
+    }
+    $action.addClass('is-action-hidden').attr('data-mode', '');
+  }
+
+  function render() {
+    var term = ($input.val() || '').trim().toLowerCase();
+    var searching = term.length > 0;
+    var availIndex = 0; // running position among Finsweet-available items (DOM order)
+
+    items.forEach(function (el) {
+      var selected = isSelected(el);
+      var fsHidden = el.style.display === 'none'; // Finsweet empty-facet — not available
+
+      // Collapse counts only AVAILABLE providers: the first KEEP available stay
+      // visible, the rest are the overflow. So if only 3 are available they all
+      // show and there's nothing to "Show more".
+      var isOverflow = false;
+      if (!fsHidden) {
+        isOverflow = availIndex >= KEEP;
+        availIndex++;
+      }
+
+      // Selected items stay visible regardless of collapse/search.
+      var hideByCollapse = !expanded && !searching && isOverflow && !selected;
+      var hideBySearch = searching && el._provKey.indexOf(term) === -1 && !selected;
+      $(el).toggleClass(HIDE_CLASS, hideByCollapse || hideBySearch);
+      setHighlight(el, searching ? term : '');
+    });
+
+    $list.toggleClass('has-query', searching); // drives the close (X) visibility
+    renderAction(searching, Math.max(0, availIndex - KEEP));
+  }
+
+  // (Re)build the cached model from the CURRENT DOM and re-sort the overflow.
+  // Idempotent — safe to run on every Finsweet re-render.
+  function cacheAndSort() {
+    items = $cmsList.children('.w-dyn-item').toArray();
+    items.forEach(function (el) {
+      el._provText = providerName(el);
+      el._provKey = el._provText.toLowerCase();
+    });
+    // Top KEEP keep their curated order; the remainder is sorted A→Z. (Which
+    // items actually show is decided dynamically in render() by availability.)
+    overflow = items.slice(KEEP);
+    overflow
+      .slice()
+      .sort(function (a, b) {
+        return a._provKey.localeCompare(b._provKey);
+      })
+      .forEach(function (el) {
+        $cmsList.append(el);
+      });
+  }
+
+  // Full re-init. Disconnect observers first so our own DOM edits (the overflow
+  // re-append + highlight innerHTML) never retrigger the observers → no loop.
+  function setup() {
+    disconnectObservers();
+    cacheAndSort();
+    render();
+    connectObservers();
+  }
+
+  function connectObservers() {
+    // Structural — Finsweet adds/removes/reorders the facet items when another
+    // filter changes the available set. childList WITHOUT subtree, so our own
+    // highlight innerHTML (on descendant text nodes) is not seen → no loop.
+    structuralObserver.observe($cmsList[0], { childList: true });
+    // Display — Finsweet toggles inline display:none on empty facets (async on
+    // load + on filter changes). style-only, so our class toggles aren't seen.
+    displayObserver.observe($cmsList[0], { attributes: true, attributeFilter: ['style'], subtree: true });
+  }
+
+  function disconnectObservers() {
+    structuralObserver.disconnect();
+    displayObserver.disconnect();
+  }
+
+  structuralObserver = new MutationObserver(function () {
+    clearTimeout(setupTimer);
+    clearTimeout(renderTimer); // a structural setup() supersedes a pending render
+    setupTimer = setTimeout(setup, 80);
+  });
+  displayObserver = new MutationObserver(function () {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 80);
+  });
+
+  // Reset = clear selected providers. Click each checked box so Finsweet +
+  // Webflow process the toggle-off exactly as a user would (don't pre-uncheck —
+  // that would just toggle it back on).
+  function resetSelected() {
+    $cmsList.find('input[type="checkbox"]').each(function () {
+      if (this.checked) this.click();
+    });
+  }
+
+  // ── events (bound once; targets are stable / delegated) ────────────────
+  $input.on('input', render);
+
+  $close.on('click', function () {
+    $input.val('');
+    render();
+    $input.trigger('focus');
+  });
+
+  $action.on('click', function () {
+    var mode = $action.attr('data-mode');
+    if (mode === 'reset') resetSelected();
+    else if (mode === 'expand') {
+      expanded = true;
+      render();
+    }
+  });
+
+  // Re-render on (de)select so Reset stays available and selected items stay
+  // visible even when collapsed. Delegated → survives Finsweet replacing nodes.
+  $cmsList.on('change', 'input[type="checkbox"]', render);
+
+  // When the MAIN filter (category tabs) changes, clear the provider selection —
+  // a provider picked for one category may not apply to the next. Tied to the
+  // category change event (not Finsweet's list rebuild), so selecting a provider
+  // — which also rebuilds the list — never wipes its own selection. Run once now
+  // (boxes still present this tick) and once after Finsweet rebuilds, to clear
+  // any selection that survived the rebuild. resetSelected only clicks checked
+  // boxes, so the second pass is a safe no-op when nothing's left.
+  $(document).on('change', 'input[fs-list-field="category"]', function () {
+    resetSelected();
+    setTimeout(resetSelected, 150);
+  });
+
+  setup(); // initial build + attach observers
+
+  function injectStyles() {
+    if (document.getElementById('provider-search-styles')) return;
+    var css =
+      '.' + HIDE_CLASS + '{display:none !important;}' +
+      // close (X) only while there's a query
+      '.models_sort-dropdown-list .model_sort-close{display:none;}' +
+      '.models_sort-dropdown-list.has-query .model_sort-close{display:flex;}' +
+      // checkmark appears only when the item's checkbox is checked
+      '.models_sort-dropdown-item .u-mr-auto{opacity:0;}' +
+      '.models_sort-dropdown-item input:checked ~ .u-mr-auto{opacity:1;}' +
+      // matched run + clickable action
+      '.' + MARK_CLASS + '{font-weight:700;color:var(--shades--black-opacity-40);}' +
+      '.models_sort-action{cursor:pointer;}' +
+      '.models_sort-action.is-action-hidden{display:none !important;}';
+    $('head').append('<style id="provider-search-styles">' + css + '</style>');
+  }
+});
