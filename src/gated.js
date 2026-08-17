@@ -22,6 +22,12 @@ $(document).ready(function () {
   // miss a submission. V4 emits native window events — no callbacks, no DOM
   // scraping for a thank-you node. See webflow-gotchas.md §5.
   window.addEventListener('hs-form-event:on-submission:success', function () {
+    // Hide first, synchronously. HubSpot swaps the form for its own thank-you
+    // message the moment it succeeds, so anything that waits for the reload
+    // flashes that default state at the reader.
+    $(gateSection).hide();
+    $(gateOverlay).hide();
+
     gatedContentStorage[articleUrl] = true;
     try {
       localStorage.setItem(gatedContentItem, JSON.stringify(gatedContentStorage));
