@@ -6,6 +6,7 @@ import { addNoScrollbarClass } from './utils/noScrollbar';
 import { initResponsiveDropdowns } from './utils/responsiveDropdowns';
 import { initAuthorsTruncate } from './utils/trunscateAuthors';
 import { initDayTabs } from './utils/dayTabs';
+import { initInlineCode } from './utils/inlineCode';
 
 $(document).ready(function () {
   initScrollToggle();
@@ -18,4 +19,5 @@ $(document).ready(function () {
   initDayTabs();
   initResponsiveDropdowns();
   initAuthorsTruncate();
+  initInlineCode();
 });
