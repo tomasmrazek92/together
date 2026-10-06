@@ -1,3 +1,5 @@
+import { initNavTracking } from './utils/navTracking';
+
 function navDropdowns() {
   var $triggers = $('[data-dropdown-trigger]');
   var $dropdowns = $('[data-dropdown-target]');
@@ -320,4 +322,5 @@ function responsiveNav() {
 export function initNav() {
   navDropdowns();
   responsiveNav();
+  initNavTracking();
 }
