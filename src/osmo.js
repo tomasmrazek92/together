@@ -1,5 +1,37 @@
 export function initCSSMarquee() {
-  const marquees = document.querySelectorAll('[data-css-marquee]');
+  const marquees = Array.from(document.querySelectorAll('[data-css-marquee]'));
+
+  // [data-marquee-split="992"]: at or below that width, the second half of the items
+  // moves into a reversed sibling row, so one CMS list renders as two rows
+  const splits = marquees
+    .filter((marquee) => marquee.hasAttribute('data-marquee-split'))
+    .map((marquee) => {
+      const list = marquee.querySelector('[data-css-marquee-list]');
+      const row = marquee.cloneNode(false);
+      row.removeAttribute('data-marquee-split');
+      row.setAttribute('data-marquee-split-row', '');
+      row.setAttribute('data-marquee-direction', 'reverse');
+      row.appendChild(list.cloneNode(false));
+      marquees.push(row);
+      return { marquee, list, row, items: Array.from(list.children) };
+    });
+
+  function applySplit() {
+    const w = $(window).width();
+    splits.forEach(({ marquee, list, row, items }) => {
+      const shouldSplit = w <= parseInt(marquee.dataset.marqueeSplit);
+      if (shouldSplit === row.isConnected) return;
+      marquee.toggleAttribute('data-marquee-split-active', shouldSplit);
+      const moved = items.slice(Math.ceil(items.length / 2));
+      if (shouldSplit) {
+        row.querySelector('[data-css-marquee-list]').append(...moved);
+        marquee.after(row);
+      } else {
+        list.append(...moved);
+        row.remove();
+      }
+    });
+  }
 
   function isInBreakpoint(marquee) {
     const w = $(window).width();
@@ -26,21 +58,26 @@ export function initCSSMarquee() {
   }
 
   function setupMarquee(marquee) {
+    if (!marquee.isConnected) return;
     if ($(marquee).find('[data-css-marquee-list][data-clone]').length) return;
+    const direction = marquee.dataset.marqueeDirection === 'reverse' ? 'reverse' : 'normal';
+    // Split rows are half-length lists: one clone per row is enough for the loop
+    const copies = marquee.matches('[data-marquee-split-active], [data-marquee-split-row]') ? 1 : 2;
     const pixelsPerSecond = parseInt($(marquee).attr('data-marquee-speed')) || 75;
     const playState = hasBreakpoint(marquee) ? 'paused' : 'running';
     $(marquee)
       .find('[data-css-marquee-list]')
       .each(function () {
         const duration = this.offsetWidth / pixelsPerSecond + 's';
-        const clone1 = $(this).clone().attr('data-clone', true);
-        const clone2 = $(this).clone().attr('data-clone', true);
-        $(this).css({ animationDuration: duration, animationPlayState: playState });
-        clone1.css({ animationDuration: duration, animationPlayState: playState });
-        clone2.css({ animationDuration: duration, animationPlayState: playState });
-        $(marquee).append(clone1, clone2);
+        const css = { animationDuration: duration, animationPlayState: playState, animationDirection: direction };
+        $(this).css(css);
+        for (let i = 0; i < copies; i++) {
+          $(marquee).append($(this).clone().attr('data-clone', true).css(css));
+        }
       });
   }
+
+  applySplit();
 
   marquees.forEach((marquee) => {
     if (hasBreakpoint(marquee)) {
@@ -76,8 +113,9 @@ export function initCSSMarquee() {
 
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
+      marquees.forEach(resetMarquee);
+      applySplit();
       marquees.forEach((marquee) => {
-        resetMarquee(marquee);
         if (hasBreakpoint(marquee)) {
           if (isInBreakpoint(marquee)) setupMarquee(marquee);
         } else {
