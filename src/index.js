@@ -7,6 +7,7 @@ import { initResponsiveDropdowns } from './utils/responsiveDropdowns';
 import { initAuthorsTruncate } from './utils/trunscateAuthors';
 import { initDayTabs } from './utils/dayTabs';
 import { initInlineCode } from './utils/inlineCode';
+import { initFormTracking } from './utils/formTracking';
 
 $(document).ready(function () {
   initScrollToggle();
@@ -20,4 +21,5 @@ $(document).ready(function () {
   initResponsiveDropdowns();
   initAuthorsTruncate();
   initInlineCode();
+  initFormTracking();
 });
