@@ -1,4 +1,5 @@
 import { initNavTracking } from './utils/navTracking';
+import { disableScroll, enableScroll } from './utils/scroll';
 
 function navDropdowns() {
   var $triggers = $('[data-dropdown-trigger]');
@@ -231,6 +232,8 @@ function responsiveNav() {
         onReverseComplete: () => {
           isAnimating = false;
           gsap.set($menu[0], { display: 'none' });
+          // Reopen in the base state: collapse any submenu left open (hidden, so no visible animation)
+          $menu.find('[data-accordion-status="active"]').attr('data-accordion-status', 'not-active');
         },
       });
 
@@ -241,6 +244,7 @@ function responsiveNav() {
 
     const open = () => {
       isOpen = true;
+      disableScroll();
       $nav.attr('data-nav-status', 'open');
       $trigger.attr('aria-expanded', 'true');
       // Move focus to first focusable item inside menu — preserve isAnimating reset
@@ -254,6 +258,7 @@ function responsiveNav() {
 
     const close = () => {
       isOpen = false;
+      enableScroll();
       $nav.attr('data-nav-status', 'closed');
       $trigger.attr('aria-expanded', 'false');
       tl.reverse();
@@ -263,6 +268,7 @@ function responsiveNav() {
     const reset = () => {
       isOpen = false;
       isAnimating = false;
+      enableScroll();
       $nav.removeAttr('data-nav-status');
       if (tl) {
         tl.kill();
@@ -289,8 +295,8 @@ function responsiveNav() {
       // Only build timeline if we start on mobile
       if (isMobile()) buildTimeline();
 
-      // A11y: Escape key closes mobile menu
-      $menu.on('keydown', (e) => {
+      // A11y: Escape key closes mobile menu, wherever focus is (clicking empty menu space drops it to body)
+      $(document).on('keydown', (e) => {
         if (e.key === 'Escape' && isOpen && !isAnimating) {
           close();
         }
