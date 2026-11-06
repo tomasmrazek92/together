@@ -1,9 +1,34 @@
-export function initScrollToggle() {
-  var $body = $(document.body);
-  var scrollPosition = 0;
-  var isScrollDisabled = false;
-  var currentBreakpoint = '';
+var scrollPosition = 0;
+var isScrollDisabled = false;
 
+// Idempotent, so the mobile nav can call them from open/close without tracking the lock itself.
+export function disableScroll() {
+  if (isScrollDisabled) return;
+  var $body = $(document.body);
+  var oldWidth = $body.innerWidth();
+  scrollPosition = window.pageYOffset;
+  $body.css({
+    overflow: 'hidden',
+    position: 'fixed',
+    top: `-${scrollPosition}px`,
+    width: oldWidth,
+  });
+  isScrollDisabled = true;
+}
+
+export function enableScroll() {
+  if (!isScrollDisabled) return;
+  $(document.body).css({
+    overflow: '',
+    position: '',
+    top: '',
+    width: '',
+  });
+  $(window).scrollTop(scrollPosition);
+  isScrollDisabled = false;
+}
+
+export function initScrollToggle() {
   function toggleScroll() {
     if (isScrollDisabled) {
       enableScroll();
@@ -12,31 +37,9 @@ export function initScrollToggle() {
     }
   }
 
-  function disableScroll() {
-    var oldWidth = $body.innerWidth();
-    scrollPosition = window.pageYOffset;
-    $body.css({
-      overflow: 'hidden',
-      position: 'fixed',
-      top: `-${scrollPosition}px`,
-      width: oldWidth,
-    });
-    isScrollDisabled = true;
-  }
-
-  function enableScroll() {
-    $body.css({
-      overflow: '',
-      position: '',
-      top: '',
-      width: '',
-    });
-    $(window).scrollTop(scrollPosition);
-    isScrollDisabled = false;
-  }
-
   // Click Event
-  $('[data-scroll="toggle"]').on('click', toggleScroll);
+  // The mobile nav hamburger locks through nav.js (open/close), so Escape and ignored clicks stay in sync.
+  $('[data-scroll="toggle"]').not('[data-nav-menu="trigger"]').on('click', toggleScroll);
 
   // Run on resize
   const breakpoints = [991, 767, 479];

@@ -1,4 +1,5 @@
 import { initNavTracking } from './utils/navTracking';
+import { disableScroll, enableScroll } from './utils/scroll';
 
 function navDropdowns() {
   var $triggers = $('[data-dropdown-trigger]');
@@ -241,6 +242,7 @@ function responsiveNav() {
 
     const open = () => {
       isOpen = true;
+      disableScroll();
       $nav.attr('data-nav-status', 'open');
       $trigger.attr('aria-expanded', 'true');
       // Move focus to first focusable item inside menu — preserve isAnimating reset
@@ -254,6 +256,7 @@ function responsiveNav() {
 
     const close = () => {
       isOpen = false;
+      enableScroll();
       $nav.attr('data-nav-status', 'closed');
       $trigger.attr('aria-expanded', 'false');
       tl.reverse();
@@ -263,6 +266,7 @@ function responsiveNav() {
     const reset = () => {
       isOpen = false;
       isAnimating = false;
+      enableScroll();
       $nav.removeAttr('data-nav-status');
       if (tl) {
         tl.kill();
