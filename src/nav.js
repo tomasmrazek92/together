@@ -232,6 +232,8 @@ function responsiveNav() {
         onReverseComplete: () => {
           isAnimating = false;
           gsap.set($menu[0], { display: 'none' });
+          // Reopen in the base state: collapse any submenu left open (hidden, so no visible animation)
+          $menu.find('[data-accordion-status="active"]').attr('data-accordion-status', 'not-active');
         },
       });
 
@@ -293,8 +295,8 @@ function responsiveNav() {
       // Only build timeline if we start on mobile
       if (isMobile()) buildTimeline();
 
-      // A11y: Escape key closes mobile menu
-      $menu.on('keydown', (e) => {
+      // A11y: Escape key closes mobile menu, wherever focus is (clicking empty menu space drops it to body)
+      $(document).on('keydown', (e) => {
         if (e.key === 'Escape' && isOpen && !isAnimating) {
           close();
         }
