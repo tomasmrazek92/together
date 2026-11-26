@@ -82,7 +82,8 @@
       logo: img('[data-cmp-logo]') || img('[data-cmp-plogo]'),
       features: new Set(listValues(el, 'features', 'data-s')),
       featureNames: listValues(el, 'features', 'data-v'),
-      deploy: listValues(el, 'deploy', 'data-v'),
+      // Deployments are a Together offering: closed models never show any, whatever the CMS holds.
+      deploy: kind === 'closed' ? [] : listValues(el, 'deploy', 'data-v'),
       tags: new Set(listValues(el, 'tags', 'data-s')),
     };
   }
@@ -95,7 +96,12 @@
       if (!m.slug) return;
       (m.kind === 'closed' ? closed : open).set(m.slug, m);
     });
-    return { open, closed };
+    // Curated pair pages (Model Comparisons list on /compare-data). Slugs are written for SEO, so
+    // routing matches on the Model A/B references, never on a slug convention.
+    const pairs = Array.from(scope.querySelectorAll('[data-cmp-pair]'))
+      .map((el) => ({ slug: attr(el, 'data-slug'), a: attr(el, 'data-a'), b: attr(el, 'data-b') }))
+      .filter((p) => p.slug && p.a && p.b);
+    return { open, closed, pairs };
   }
 
   async function loadData() {
@@ -388,20 +394,12 @@
     return x.name.localeCompare(y.name) <= 0 ? [x, y] : [y, x];
   }
 
-  // Pair pages are slugged "<a>-vs-<b>" in ordered() order. A HEAD request says whether one exists
-  // (Webflow answers 404 for a missing CMS item), so a picked pair can land on its real page.
-  const pairPath = (x, y) => {
-    const [a, b] = ordered(x, y);
-    return `/compare/${a.slug}-vs-${b.slug}`;
-  };
-  async function pairExists(path) {
-    try {
-      const res = await fetch(path, { method: 'HEAD', credentials: 'same-origin' });
-      return res.ok;
-    } catch (e) {
-      return false;
-    }
-  }
+  // The pair page for two models, picked in either order.
+  const findPair = (x, y, data) =>
+    data.pairs.find(
+      (p) => (p.a === x.slug && p.b === y.slug) || (p.a === y.slug && p.b === x.slug)
+    );
+
   const queryUrl = (x, y) => {
     const [a, b] = ordered(x, y);
     return `/compare?a=${encodeURIComponent(a.slug)}&b=${encodeURIComponent(b.slug)}`;
@@ -624,10 +622,10 @@
       if (!a || !b || a === b || routing) return;
       routing = true;
       const [x, y] = ordered(a, b);
-      const path = pairPath(x, y);
       // A curated pair page exists: go there (server-rendered, indexable, has Related).
-      if (await pairExists(path)) {
-        window.location.assign(path);
+      const pair = findPair(x, y, data);
+      if (pair) {
+        window.location.assign(`/compare/${pair.slug}`);
         return;
       }
       routing = false;
@@ -749,9 +747,9 @@ button.cmp-select{font:inherit;margin:0;appearance:none;-webkit-appearance:none}
       // The browser would restore an old scroll position over the result view.
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       const [a, b] = ordered(x, y);
-      const path = pairPath(a, b);
-      if (await pairExists(path)) {
-        window.location.replace(path);
+      const pair = findPair(a, b, data);
+      if (pair) {
+        window.location.replace(`/compare/${pair.slug}`);
         return;
       }
       setHeadForQueryView(a, b);
