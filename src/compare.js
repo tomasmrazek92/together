@@ -29,6 +29,12 @@
     'terminal',
     'arena',
     'frontiercode',
+    'simpleqa',
+    'tau3',
+    'deepswe',
+    'frontierswe',
+    'aalcr',
+    'mmmupro',
   ];
   // Closed providers publish no weights, so these rows say so instead of hiding.
   const CLOSED_UNDISCLOSED = ['params', 'active', 'quant'];
