@@ -256,6 +256,22 @@
     out.textContent = value || '–';
   }
 
+  // No model data: work from what Webflow rendered. Empty cell = "–", row empty on both sides = gone.
+  function tidyServerTable() {
+    root.querySelectorAll('[data-cmp-row]').forEach((row) => {
+      const cells = [...row.querySelectorAll('[data-cmp-cell]')];
+      const empty = cells.map((c) => !c.innerText.trim());
+      if (empty.every(Boolean)) return row.remove();
+      cells.forEach((c, i) => {
+        if (empty[i]) c.replaceChildren(h('div', 'body-s', '–'));
+      });
+      return null;
+    });
+    root.querySelectorAll('[data-cmp-group]').forEach((g) => {
+      if (!g.querySelector('[data-cmp-row]')) g.remove();
+    });
+  }
+
   function renderTables(a, b) {
     // Visually hidden <thead>: screen readers announce the model per column.
     root.querySelectorAll('[data-cmp-head="a"]').forEach((th) => {
@@ -703,6 +719,11 @@ button.cmp-select{font:inherit;margin:0;appearance:none;-webkit-appearance:none}
         addBreadcrumbSchema(
           document.querySelector('[data-cmp-title]')?.textContent.trim() || `${a.name} vs ${b.name}`
         );
+      } else {
+        // A model is missing from /compare-data (taken out of Compare after its pair page was made):
+        // keep the server-rendered page, tidy the table, still rank Related.
+        tidyServerTable();
+        renderRelated(a || { slug: pageA }, b || { slug: bSlug }, data, attr(root, 'data-pair'));
       }
       return;
     }
