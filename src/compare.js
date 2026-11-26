@@ -233,23 +233,27 @@
   }
 
   function fillCell(cell, m, row, value) {
-    // Pair template: cells holding a CMS list are already rendered server-side.
-    if (cell.querySelector('.w-dyn-list')) return;
+    // Pair template: cells holding a CMS list are already rendered server-side. Only an empty one
+    // needs JS: its empty state may be hidden in Webflow, so write the "–" here.
+    if (cell.querySelector('.w-dyn-list')) {
+      if (!value) cell.replaceChildren(h('div', 'body-s', '–'));
+      return;
+    }
+    // Endpoint: Webflow-built copy control ([data-cmp-copy], site copy pattern from index.js).
+    // Copies the endpoint string only; no endpoint (closed models) = plain "–", no copy icon.
+    const copy = cell.querySelector('[data-cmp-copy]');
+    if (copy) {
+      const target = copy.querySelector('[data-copy-target]');
+      if (value && target) {
+        target.textContent = value;
+        target.classList.remove('w-dyn-bind-empty');
+      } else copy.replaceWith(h('div', 'body-s', '–'));
+      return;
+    }
     const out = cell.querySelector('.body-s') || cell;
     // Webflow hides a bound element whose CMS field is empty; JS has a value (or "–") for it now.
     out.classList.remove('w-dyn-bind-empty');
-    if (!value) {
-      out.textContent = '–';
-      return;
-    }
-    if (row === 'endpoint' && modelUrl(m)) {
-      out.textContent = '';
-      const a = h('a', 'cmp-endpoint', value);
-      a.href = modelUrl(m);
-      out.append(a);
-    } else {
-      out.textContent = value;
-    }
+    out.textContent = value || '–';
   }
 
   function renderTables(a, b) {
@@ -661,8 +665,6 @@
 .cmp-card_slot .cmp-card{height:100%}
 .cmp-browse_card{all:unset;display:flex;cursor:pointer;width:100%}
 .cmp-browse_card:focus-visible{outline:2px solid var(--product--purple-01);outline-offset:2px;border-radius:.5em}
-.cmp-endpoint{color:var(--brand--brand-orange);text-decoration:none;word-break:break-all}
-.cmp-endpoint:hover{text-decoration:underline}
 button.cmp-select{font:inherit;margin:0;appearance:none;-webkit-appearance:none}
 .cmp-select:focus-visible{outline:2px solid var(--opacity--blue-40);outline-offset:2px}
 .cmp-picker_box.is-filled .cmp-select{color:var(--brand--black)}
