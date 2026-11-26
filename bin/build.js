@@ -13,6 +13,7 @@ const ENTRY_POINTS = [
   'src/models.js',
   'src/video-gate.js',
   'src/ptu-calculator.js',
+  'src/compare.js',
 ];
 
 // Config dev serving
