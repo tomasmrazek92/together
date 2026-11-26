@@ -114,6 +114,18 @@
     if (text != null) el.textContent = text;
     return el;
   };
+  // Jump, never animate: a smooth scroll over a view swap reads as the page lurching.
+  const toTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  // Keep the active option in view by scrolling its own list, not the page.
+  const scrollIntoList = (el, stop) => {
+    let box = el.parentElement;
+    while (box && box !== stop && box.scrollHeight <= box.clientHeight) box = box.parentElement;
+    if (!box || box === stop.parentElement) return;
+    const b = box.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.top < b.top) box.scrollTop -= b.top - r.top;
+    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom;
+  };
   const priceNum = (v) => {
     const n = parseFloat(String(v).replace(/[^0-9.]/g, ''));
     return Number.isFinite(n) ? n : null;
@@ -526,7 +538,7 @@
         o.classList.toggle('is-active', on);
         o.setAttribute('aria-selected', String(on));
         if (on) {
-          o.scrollIntoView({ block: 'nearest' });
+          scrollIntoList(o, panel);
           search.setAttribute('aria-activedescendant', o.id);
         }
       });
@@ -538,7 +550,7 @@
       trigger.setAttribute('aria-expanded', 'true');
       search.value = '';
       draw();
-      search.focus();
+      search.focus({ preventScroll: true });
     }
     function close() {
       panel.hidden = true;
@@ -564,7 +576,7 @@
     function choose(m) {
       set(m);
       close();
-      trigger.focus();
+      trigger.focus({ preventScroll: true });
       onChange();
     }
 
@@ -584,7 +596,7 @@
         if (shown[active]) choose(shown[active]);
       } else if (e.key === 'Escape') {
         close();
-        trigger.focus();
+        trigger.focus({ preventScroll: true });
       }
     });
     document.addEventListener('mousedown', (e) => {
@@ -622,7 +634,7 @@
       history.pushState({ cmp: 1 }, '', queryUrl(x, y));
       setHeadForQueryView(x, y);
       renderResult(x, y, data, '');
-      window.scrollTo(0, 0);
+      toTop();
     }
 
     // The Webflow reference dropdown is the template: one panel, first option cloned per model.
@@ -734,6 +746,8 @@ button.cmp-select{font:inherit;margin:0;appearance:none;-webkit-appearance:none}
     const x = find(qs.get('a'));
     const y = find(qs.get('b'));
     if (x && y && x !== y) {
+      // The browser would restore an old scroll position over the result view.
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       const [a, b] = ordered(x, y);
       const path = pairPath(a, b);
       if (await pairExists(path)) {
@@ -742,6 +756,7 @@ button.cmp-select{font:inherit;margin:0;appearance:none;-webkit-appearance:none}
       }
       setHeadForQueryView(a, b);
       renderResult(a, b, data, '');
+      toTop();
       return;
     }
     initPick(data);
