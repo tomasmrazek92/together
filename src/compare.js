@@ -423,6 +423,7 @@
     chev.innerHTML =
       '<svg viewBox="0 0 20 20" width="100%" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.25"/></svg>';
     trigger.append(logo, label, chev);
+    trigger.setAttribute('aria-label', `Model ${side.toUpperCase()}: choose a model`);
 
     const panel = tpl ? tpl.panel.cloneNode(true) : h('div', 'cmp-select_panel');
     panel.removeAttribute('data-cmp-panel');
@@ -436,6 +437,12 @@
     list.replaceChildren();
     list.setAttribute('role', 'listbox');
     list.id = `cmp-list-${side}`;
+    list.setAttribute('aria-label', `Models for side ${side.toUpperCase()}`);
+    // Combobox pattern: focus stays in the search field, arrows move aria-activedescendant.
+    search.setAttribute('role', 'combobox');
+    search.setAttribute('aria-controls', list.id);
+    search.setAttribute('aria-expanded', 'true');
+    search.setAttribute('aria-autocomplete', 'list');
     trigger.setAttribute('aria-controls', list.id);
     panel.prepend(search);
     if (!list.parentNode) panel.append(list);
@@ -448,6 +455,7 @@
     function optionEl(m) {
       const o = tpl ? tpl.option.cloneNode(true) : h('div', 'cmp-select_option');
       o.setAttribute('role', 'option');
+      o.id = `cmp-opt-${side}-${m.kind}-${m.slug}`;
       o.dataset.key = `${m.kind}:${m.slug}`;
       const name = o.querySelector('[data-cmp-opt-name]');
       const type = o.querySelector('[data-cmp-opt-type]');
@@ -493,12 +501,16 @@
     }
 
     function highlight() {
-      list.querySelectorAll('.cmp-select_option').forEach((o, i) => {
+      list.querySelectorAll('[role="option"]').forEach((o, i) => {
         const on = i === active;
         o.classList.toggle('is-active', on);
         o.setAttribute('aria-selected', String(on));
-        if (on) o.scrollIntoView({ block: 'nearest' });
+        if (on) {
+          o.scrollIntoView({ block: 'nearest' });
+          search.setAttribute('aria-activedescendant', o.id);
+        }
       });
+      if (active < 0) search.removeAttribute('aria-activedescendant');
     }
 
     function open() {
@@ -515,6 +527,11 @@
     function set(m) {
       value = m;
       label.textContent = m ? m.name : '–';
+      // The visible "–" means nothing to a screen reader: name the trigger by side and choice.
+      trigger.setAttribute(
+        'aria-label',
+        `Model ${side.toUpperCase()}: ${m ? m.name : 'choose a model'}`
+      );
       logo.replaceChildren();
       if (m && m.logo) {
         const img = h('img');
